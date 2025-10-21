@@ -1,0 +1,86 @@
+"""FastAPI application with routers and middleware."""
+
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from app.api.v1 import routes_auth, routes_health, routes_items, routes_admin
+from app.config import settings
+from app.core.exceptions import register_exception_handlers
+from app.db.session import create_tables
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Application lifespan manager."""
+    # Startup
+    create_tables()
+    yield
+    # Shutdown
+    pass
+
+
+# Create FastAPI app
+app = FastAPI(
+    title=settings.app_name,
+    version=settings.app_version,
+    description="FastAPI mobile backend with JWT authentication and comprehensive security features",
+    debug=settings.debug,
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    openapi_tags=[
+        {
+            "name": "Authentication",
+            "description": "User authentication and token management operations",
+        },
+        {
+            "name": "Health",
+            "description": "Health check and monitoring endpoints",
+        },
+        {
+            "name": "Items",
+            "description": "Item management operations",
+        },
+        {
+            "name": "Admin",
+            "description": "Administrative operations requiring admin privileges",
+        },
+    ],
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.allowed_origins,
+    allow_credentials=True,
+    allow_methods=settings.allowed_methods,
+    allow_headers=settings.allowed_headers,
+)
+
+# Register exception handlers
+register_exception_handlers(app)
+
+# Include routers
+app.include_router(routes_health.router, prefix="/v1")
+app.include_router(routes_auth.router, prefix="/v1")
+app.include_router(routes_items.router, prefix="/v1")
+app.include_router(routes_admin.router, prefix="/v1")
+
+
+@app.get("/")
+async def root() -> JSONResponse:
+    """Root endpoint."""
+    return JSONResponse(
+        content={
+            "message": f"Welcome to {settings.app_name}",
+            "version": settings.app_version,
+            "docs": "/docs",
+            "redoc": "/redoc",
+            "health": "/v1/health",
+        }
+    )
