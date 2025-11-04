@@ -56,6 +56,18 @@ class IntegrityException(BaseAPIException):
         )
 
 
+class ConflictException(BaseAPIException):
+    """Conflict exception for resource conflicts."""
+    
+    def __init__(self, message: str = "Resource conflict", details: list[ErrorDetail] = None):
+        super().__init__(
+            message=message,
+            error_code=ErrorCode.INTEGRITY_ERROR,
+            status_code=status.HTTP_409_CONFLICT,
+            details=details or []
+        )
+
+
 class NotFoundException(BaseAPIException):
     """Resource not found exception."""
     

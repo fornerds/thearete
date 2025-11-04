@@ -7,6 +7,20 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 
+class BaseSchema(BaseModel):
+    """Base schema for all Pydantic models."""
+    
+    class Config:
+        from_attributes = True
+
+
+class TimestampMixin(BaseModel):
+    """Mixin for timestamp fields."""
+    
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
+
+
 class ErrorCode(str, Enum):
     """Standard error codes."""
     VALIDATION_ERROR = "VALIDATION_ERROR"

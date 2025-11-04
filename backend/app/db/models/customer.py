@@ -23,7 +23,7 @@ class Customer(Base):
     shop_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("shop.id"), nullable=False)
     name: Mapped[Optional[str]] = mapped_column(String(255), comment="고객명")
     age: Mapped[Optional[int]] = mapped_column(Integer, comment="나이")
-    gender: Mapped[Optional[str]] = mapped_column(Enum(("M", "F")), comment="성별 (M/F)")
+    gender: Mapped[Optional[str]] = mapped_column(Enum("M", "F", name="gender_enum"), comment="성별 (M/F)")
     phone: Mapped[Optional[str]] = mapped_column(String(255), comment="연락처")
     skin_type: Mapped[Optional[str]] = mapped_column(String(255), comment="피부타입")
     note: Mapped[Optional[str]] = mapped_column(Text, comment="특이사항")

@@ -49,6 +49,42 @@ class Settings(BaseSettings):
         default=["*"], description="Allowed CORS headers"
     )
 
+    # AI Configuration
+    ai_provider: str = Field(
+        default="mock", 
+        description="AI provider (openai, anthropic, generic, mock)"
+    )
+    ai_base_url: str = Field(
+        default="https://api.openai.com/v1",
+        description="AI API base URL"
+    )
+    ai_api_key: str = Field(
+        default="",
+        description="AI API key"
+    )
+    ai_timeout_sec: int = Field(
+        default=30,
+        description="AI request timeout in seconds"
+    )
+    ai_max_retries: int = Field(
+        default=3,
+        description="Maximum number of retries for AI requests"
+    )
+    ai_circuit_breaker_threshold: int = Field(
+        default=5,
+        description="Circuit breaker failure threshold"
+    )
+    ai_circuit_breaker_timeout: int = Field(
+        default=60,
+        description="Circuit breaker recovery timeout in seconds"
+    )
+
+    # Database Seeding
+    seed_on_start: bool = Field(
+        default=False,
+        description="Automatically seed database on application startup"
+    )
+
 
 # Global settings instance
 settings = Settings()

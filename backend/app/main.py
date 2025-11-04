@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.v1 import routes_auth, routes_health, routes_items, routes_admin
+from app.api.v1 import routes_auth, routes_health, routes_items, routes_admin, routes_ai
 from app.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.db.session import create_tables
@@ -18,6 +18,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager."""
     # Startup
     create_tables()
+    
+    # Auto-seed database if enabled
+    if settings.seed_on_start:
+        try:
+            from app.scripts.seed import seed_database
+            await seed_database()
+            print("✅ Database seeded successfully on startup")
+        except Exception as e:
+            print(f"⚠️  Failed to seed database on startup: {e}")
+    
     yield
     # Shutdown
     pass
@@ -50,6 +60,10 @@ app = FastAPI(
             "name": "Admin",
             "description": "Administrative operations requiring admin privileges",
         },
+        {
+            "name": "AI",
+            "description": "AI service operations for text completion and embeddings",
+        },
     ],
 )
 
@@ -70,6 +84,7 @@ app.include_router(routes_health.router, prefix="/v1")
 app.include_router(routes_auth.router, prefix="/v1")
 app.include_router(routes_items.router, prefix="/v1")
 app.include_router(routes_admin.router, prefix="/v1")
+app.include_router(routes_ai.router, prefix="/v1")
 
 
 @app.get("/")

@@ -1,4 +1,4 @@
-.PHONY: help install dev test lint fmt clean run migrate revision seed docker-up docker-down models-from-erd revision-auto routes-from-excel
+.PHONY: help install dev test lint fmt clean run migrate revision seed docker-up docker-down models-from-erd revision-auto routes-from-excel db-reset db-init
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -90,3 +90,25 @@ routes-from-excel-no-tests: ## Generate FastAPI routes from Excel API spec (skip
 
 routes-from-excel-no-services: ## Generate FastAPI routes from Excel API spec (skip services)
 	python tools/generate_routes_from_excel.py --skip-services
+
+# Database Management
+db-reset: ## Reset database (drop all tables and recreate with migrations)
+	python -m app.scripts.init_db --reset --force
+
+db-reset-interactive: ## Reset database with confirmation prompt
+	python -m app.scripts.init_db --reset
+
+db-reset-with-seed: ## Reset database and seed with sample data
+	python -m app.scripts.init_db --reset --seed --force
+
+db-init: ## Initialize database (create tables with migrations)
+	python -m app.scripts.init_db --init
+
+db-init-with-seed: ## Initialize database and seed with sample data
+	python -m app.scripts.init_db --init --seed
+
+db-seed-only: ## Seed database with sample data only
+	python -m app.scripts.init_db --seed
+
+db-status: ## Check database connection and status
+	python -c "import asyncio; from app.db.session import get_async_session; from sqlalchemy import text; asyncio.run(get_async_session().__aenter__().execute(text('SELECT 1')))"
