@@ -9,18 +9,34 @@ from typing import List, Optional, Any
 class TreatmentRepository:
     """Repository for treatment domain database operations."""
     
-    async def get_by_id(self, db: AsyncSession, treatment_id: int) -> Optional[Treatment]:
+    async def get_by_id(self, db: AsyncSession, treatment_id: int, shop_id: Optional[int] = None) -> Optional[Treatment]:
         """Get treatment by ID."""
-        result = await db.execute(
-            select(Treatment).where(Treatment.id == treatment_id).where(Treatment.is_deleted == False)
-        )
+        from app.db.models.customer import Customer
+        from sqlalchemy import or_
+        
+        query = select(Treatment).join(Customer).where(
+            Treatment.id == treatment_id
+        ).where(or_(Treatment.is_deleted == False, Treatment.is_deleted.is_(None)))
+        
+        if shop_id:
+            query = query.where(Customer.shop_id == shop_id)
+        
+        result = await db.execute(query)
         return result.scalar_one_or_none()
     
-    async def get_all(self, db: AsyncSession, skip: int = 0, limit: int = 100, customer_id: Optional[int] = None) -> List[Treatment]:
+    async def get_all(self, db: AsyncSession, skip: int = 0, limit: int = 100, customer_id: Optional[int] = None, shop_id: Optional[int] = None) -> List[Treatment]:
         """Get all treatments with pagination."""
-        query = select(Treatment).where(Treatment.is_deleted == False)
+        from app.db.models.customer import Customer
+        from sqlalchemy import or_
+        
+        query = select(Treatment).join(Customer).where(or_(Treatment.is_deleted == False, Treatment.is_deleted.is_(None)))
+        
         if customer_id:
             query = query.where(Treatment.customer_id == customer_id)
+        
+        if shop_id:
+            query = query.where(Customer.shop_id == shop_id)
+        
         query = query.offset(skip).limit(limit)
         result = await db.execute(query)
         return result.scalars().all()

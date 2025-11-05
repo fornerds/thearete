@@ -13,25 +13,52 @@ class TreatmentService:
     def __init__(self):
         self.repository = TreatmentRepository()
 
-    async def create_treatment(self, db: AsyncSession, request_data: Dict[str, Any]) -> Treatment:
+    async def create_treatment(self, db: AsyncSession, request_data: Dict[str, Any], shop_id: Optional[int] = None) -> Treatment:
         """Create new treatment."""
+        # Verify that customer belongs to the shop
+        if shop_id:
+            from app.db.models.customer import Customer
+            from sqlalchemy import select
+            from app.core.exceptions import ForbiddenException
+            
+            customer_id = request_data.get("customer_id")
+            if customer_id:
+                result = await db.execute(
+                    select(Customer).where(Customer.id == customer_id)
+                )
+                customer = result.scalar_one_or_none()
+                if not customer:
+                    raise ForbiddenException("Customer not found")
+                if customer.shop_id != shop_id:
+                    raise ForbiddenException("Customer does not belong to your shop")
+        
         return await self.repository.create(db, request_data)
     
-    async def list_treatments(self, db: AsyncSession, customer_id: Optional[int] = None, skip: int = 0, limit: int = 100) -> List[Treatment]:
+    async def list_treatments(self, db: AsyncSession, customer_id: Optional[int] = None, shop_id: Optional[int] = None, skip: int = 0, limit: int = 100) -> List[Treatment]:
         """List all treatments."""
-        return await self.repository.get_all(db, skip=skip, limit=limit, customer_id=customer_id)
+        return await self.repository.get_all(db, skip=skip, limit=limit, customer_id=customer_id, shop_id=shop_id)
     
-    async def get_treatment_by_id(self, db: AsyncSession, treatment_id: int) -> Optional[Treatment]:
+    async def get_treatment_by_id(self, db: AsyncSession, treatment_id: int, shop_id: Optional[int] = None) -> Optional[Treatment]:
         """Get treatment by ID."""
-        return await self.repository.get_by_id(db, treatment_id)
+        return await self.repository.get_by_id(db, treatment_id, shop_id=shop_id)
     
-    async def update_treatment(self, db: AsyncSession, treatment_id: int, request_data: Dict[str, Any]) -> Optional[Treatment]:
+    async def update_treatment(self, db: AsyncSession, treatment_id: int, request_data: Dict[str, Any], shop_id: Optional[int] = None) -> Optional[Treatment]:
         """Update treatment by ID."""
+        # Verify treatment belongs to shop
+        if shop_id:
+            treatment = await self.get_treatment_by_id(db, treatment_id, shop_id=shop_id)
+            if not treatment:
+                return None
         return await self.repository.update(db, treatment_id, request_data)
     
-    async def complete_treatment(self, db: AsyncSession, treatment_id: int) -> bool:
+    async def complete_treatment(self, db: AsyncSession, treatment_id: int, shop_id: Optional[int] = None) -> bool:
         """Mark treatment as completed if all sessions are completed."""
-        treatment = await self.repository.get_by_id(db, treatment_id)
+        # Verify treatment belongs to shop
+        if shop_id:
+            treatment = await self.get_treatment_by_id(db, treatment_id, shop_id=shop_id)
+        else:
+            treatment = await self.repository.get_by_id(db, treatment_id)
+        
         if not treatment:
             return False
         

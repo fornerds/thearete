@@ -9,18 +9,39 @@ from typing import List, Optional, Any
 class TreatmentSessionsRepository:
     """Repository for treatment sessions domain database operations."""
     
-    async def get_by_id(self, db: AsyncSession, session_id: int) -> Optional[TreatmentSession]:
+    async def get_by_id(self, db: AsyncSession, session_id: int, shop_id: Optional[int] = None) -> Optional[TreatmentSession]:
         """Get treatment session by ID."""
-        result = await db.execute(
-            select(TreatmentSession).where(TreatmentSession.id == session_id).where(TreatmentSession.is_deleted == False)
-        )
+        from app.db.models.treatment import Treatment
+        from app.db.models.customer import Customer
+        from sqlalchemy import or_
+        
+        query = select(TreatmentSession).join(Treatment).join(Customer).where(
+            TreatmentSession.id == session_id
+        ).where(or_(TreatmentSession.is_deleted == False, TreatmentSession.is_deleted.is_(None)))
+        query = query.where(or_(Treatment.is_deleted == False, Treatment.is_deleted.is_(None)))
+        
+        if shop_id:
+            query = query.where(Customer.shop_id == shop_id)
+        
+        result = await db.execute(query)
         return result.scalar_one_or_none()
     
-    async def get_all(self, db: AsyncSession, treatment_id: Optional[int] = None, skip: int = 0, limit: int = 100) -> List[TreatmentSession]:
+    async def get_all(self, db: AsyncSession, treatment_id: Optional[int] = None, shop_id: Optional[int] = None, skip: int = 0, limit: int = 100) -> List[TreatmentSession]:
         """Get all treatment sessions with pagination."""
-        query = select(TreatmentSession).where(TreatmentSession.is_deleted == False)
+        from app.db.models.treatment import Treatment
+        from app.db.models.customer import Customer
+        from sqlalchemy import or_
+        
+        query = select(TreatmentSession).join(Treatment).join(Customer).where(
+            or_(TreatmentSession.is_deleted == False, TreatmentSession.is_deleted.is_(None))
+        ).where(or_(Treatment.is_deleted == False, Treatment.is_deleted.is_(None)))
+        
         if treatment_id:
             query = query.where(TreatmentSession.treatment_id == treatment_id)
+        
+        if shop_id:
+            query = query.where(Customer.shop_id == shop_id)
+        
         query = query.offset(skip).limit(limit)
         result = await db.execute(query)
         return result.scalars().all()
