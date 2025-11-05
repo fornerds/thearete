@@ -138,3 +138,45 @@ class UserSessions(BaseModel):
                 ]
             }
         }
+
+
+class ShopLoginRequest(BaseModel):
+    """Shop login request schema."""
+    email: EmailStr = Field(..., description="Shop email address")
+    password: str = Field(..., min_length=6, description="Shop password")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "clinic@example.com",
+                "password": "abcd1234"
+            }
+        }
+
+
+class ShopLoginResponse(BaseModel):
+    """Shop login response schema."""
+    access_token: str = Field(..., description="JWT access token")
+    refresh_token: str = Field(..., description="JWT refresh token")
+    shop_id: int = Field(..., description="Shop ID")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "shop_id": 1
+            }
+        }
+
+
+class ShopLogoutRequest(BaseModel):
+    """Shop logout request schema."""
+    refresh_token: str = Field(..., description="Refresh token to revoke")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
+        }

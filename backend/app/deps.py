@@ -1,6 +1,6 @@
 """Dependency injection for FastAPI routes."""
 
-from typing import Annotated, Generator
+from typing import Annotated, Generator, Optional
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -37,7 +37,7 @@ def get_current_active_user(
 # Optional current user dependency
 def get_current_user_optional(
     token: Annotated[str, Depends(verify_token)]
-) -> User | None:
+) -> Optional[User]:
     """Get current user if authenticated, otherwise None."""
     if not token:
         return None
@@ -47,4 +47,4 @@ def get_current_user_optional(
 # Type aliases for common dependencies
 DatabaseDep = Annotated[Session, Depends(get_database)]
 CurrentUserDep = Annotated[User, Depends(get_current_active_user)]
-OptionalUserDep = Annotated[User | None, Depends(get_current_user_optional)]
+OptionalUserDep = Annotated[Optional[User], Depends(get_current_user_optional)]

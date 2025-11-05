@@ -16,6 +16,18 @@ class ShopRepository:
         )
         return result.scalar_one_or_none()
     
+    async def get_by_email(self, db: AsyncSession, email: str) -> Optional[Shop]:
+        """Get shop by email."""
+        from sqlalchemy import or_
+        result = await db.execute(
+            select(Shop).where(
+                Shop.email == email
+            ).where(
+                or_(Shop.is_deleted == False, Shop.is_deleted.is_(None))
+            )
+        )
+        return result.scalar_one_or_none()
+    
     async def get_all(self, db: AsyncSession, skip: int = 0, limit: int = 100) -> List[Shop]:
         """Get all shops with pagination."""
         result = await db.execute(

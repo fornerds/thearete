@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.v1 import routes_auth, routes_health, routes_items, routes_admin, routes_ai
+from app.api.v1 import routes_auth, routes_health, routes_items, routes_admin, routes_ai, routes_shop, routes_customer, routes_treatment, routes_treatment_sessions, routes_skin_measurements, routes_color_recipes, routes_treatment_photos
 from app.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.db.session import create_tables
@@ -85,6 +85,13 @@ app.include_router(routes_auth.router, prefix="/v1")
 app.include_router(routes_items.router, prefix="/v1")
 app.include_router(routes_admin.router, prefix="/v1")
 app.include_router(routes_ai.router, prefix="/v1")
+app.include_router(routes_shop.router, prefix="/api")
+app.include_router(routes_customer.router, prefix="/api")
+app.include_router(routes_treatment.router)
+app.include_router(routes_treatment_sessions.router)
+app.include_router(routes_skin_measurements.router)
+app.include_router(routes_color_recipes.router)
+app.include_router(routes_treatment_photos.router)
 
 
 @app.get("/")

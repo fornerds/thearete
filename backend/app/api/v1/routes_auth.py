@@ -22,25 +22,31 @@ from app.core.exceptions import (
     UnauthorizedException,
     UserInactiveException
 )
-from app.core.security import create_tokens_with_expiry, verify_token, verify_password
+from app.core.security import create_tokens_with_expiry, verify_token, verify_password, create_shop_tokens
 from app.db.session import get_db
 from app.db.models.user import User
+from app.db.models.shop import Shop
 from app.schemas.auth import (
     LoginRequest,
     RefreshTokenRequest,
     LogoutRequest,
     TokenResponse,
     UserProfile,
-    UserSessions
+    UserSessions,
+    ShopLoginRequest,
+    ShopLoginResponse,
+    ShopLogoutRequest
 )
 from app.schemas.common import SuccessResponse
 from app.services.user_service import UserService
+from app.services.shop_service import ShopService
+from app.core.auth import get_current_user, get_current_shop
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post(
-    "/login",
+    "/user/login",
     response_model=TokenResponse,
     summary="User Login",
     description="Authenticate user and return access and refresh tokens",
@@ -50,11 +56,11 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
         422: {"description": "Validation error"}
     }
 )
-async def login(
+async def user_login(
     login_data: LoginRequest,
     db: AsyncSession = Depends(get_db)
 ) -> TokenResponse:
-    """Login endpoint with token management."""
+    """User login endpoint with token management."""
     user_service = UserService()
     user = await user_service.get_user_by_email(db, login_data.email)
     
@@ -289,3 +295,112 @@ async def revoke_session(
     await db.commit()
     
     return SuccessResponse(message="Session revoked successfully")
+
+
+@router.post(
+    "/login",
+    response_model=ShopLoginResponse,
+    summary="피부샵 로그인",
+    description="Authenticate shop and return access and refresh tokens",
+    responses={
+        200: {"description": "Login successful"},
+        401: {"description": "Invalid credentials"},
+        422: {"description": "Validation error"}
+    }
+)
+async def shop_login(
+    login_data: ShopLoginRequest,
+    db: AsyncSession = Depends(get_db)
+) -> ShopLoginResponse:
+    """Shop login endpoint (business login API)."""
+    shop_service = ShopService()
+    shop = await shop_service.get_shop_by_email(db, login_data.email)
+    
+    if not shop:
+        raise InvalidCredentialsException("Invalid email or password")
+    
+    # Shop password가 None인 경우 처리
+    if not shop.password:
+        raise InvalidCredentialsException("Shop password not set. Please contact administrator.")
+    
+    # Shop password는 암호화되어 저장되어 있으므로 verify_password 사용
+    if not verify_password(login_data.password, shop.password):
+        raise InvalidCredentialsException("Invalid email or password")
+    
+    if shop.is_deleted:
+        raise InvalidCredentialsException("Shop account is deleted")
+    
+    # Create tokens for shop
+    tokens = create_shop_tokens(shop.id, shop.email)
+    
+    # Store refresh token in Shop model
+    from sqlalchemy import update
+    refresh_expires = datetime.utcnow() + timedelta(days=7)
+    await db.execute(
+        update(Shop)
+        .where(Shop.id == shop.id)
+        .values(
+            refresh_token=tokens["refresh_token"],
+            refresh_token_expiry=refresh_expires,
+            last_login_at=datetime.utcnow()
+        )
+    )
+    await db.commit()
+    
+    return ShopLoginResponse(
+        access_token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
+        shop_id=shop.id
+    )
+
+
+@router.post(
+    "/logout",
+    response_model=SuccessResponse,
+    summary="피부샵 로그아웃",
+    description="Logout shop and revoke refresh token",
+    responses={
+        200: {"description": "Logout successful"},
+        401: {"description": "Unauthorized"},
+        422: {"description": "Validation error"}
+    }
+)
+async def shop_logout(
+    logout_data: ShopLogoutRequest,
+    db: AsyncSession = Depends(get_db)
+) -> SuccessResponse:
+    """Shop logout endpoint."""
+    # Verify refresh token
+    payload = verify_token(logout_data.refresh_token)
+    
+    if not payload:
+        raise TokenInvalidException("Invalid refresh token")
+    
+    # Check token type
+    if payload.get("type") != "shop_refresh":
+        raise TokenInvalidException("Invalid token type")
+    
+    # Get shop from token
+    shop_id = payload.get("sub")
+    if not shop_id:
+        raise TokenInvalidException("Invalid token payload")
+    
+    shop_service = ShopService()
+    shop = await shop_service.get_shop_by_id(db, int(shop_id))
+    
+    if not shop:
+        raise UnauthorizedException("Shop not found")
+    
+    # Clear refresh token from Shop model
+    from sqlalchemy import update
+    result = await db.execute(
+        update(Shop)
+        .where(Shop.id == shop.id)
+        .values(
+            refresh_token=None,
+            refresh_token_expiry=None
+        )
+    )
+    await db.commit()
+    
+    return SuccessResponse(message="로그아웃 완료")

@@ -34,8 +34,8 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 
-def get_db() -> Generator[Session, None, None]:
-    """Get database session."""
+def get_sync_db() -> Generator[Session, None, None]:
+    """Get database session (synchronous)."""
     db = SessionLocal()
     try:
         yield db
@@ -43,8 +43,17 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Get async database session."""
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+
+
+async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
+    """Get async database session (alias for get_db)."""
     async with AsyncSessionLocal() as session:
         try:
             yield session

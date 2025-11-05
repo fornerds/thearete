@@ -7,7 +7,7 @@ class Request6(BaseModel):
     """Schema for customer_request_6"""
     
     name: Optional[str] = Field(None)
-    age: Optional[str] = Field(None)
+    age: Optional[int] = Field(None, description="나이 (정수)")
     gender: Optional[str] = Field(None)
     phone: Optional[str] = Field(None)
     skin_type: Optional[str] = Field(None)

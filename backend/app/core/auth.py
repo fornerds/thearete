@@ -19,8 +19,10 @@ from app.core.exceptions import (
 from app.core.security import verify_token, create_access_token, create_refresh_token
 from app.db.models.user import User
 from app.db.models.token import UserToken
+from app.db.models.shop import Shop
 from app.db.session import get_db
 from app.services.user_service import UserService
+from app.services.shop_service import ShopService
 
 # OAuth2 scheme
 security = HTTPBearer(auto_error=False)
@@ -221,3 +223,43 @@ async def get_user_sessions(db: AsyncSession, user_id: int) -> List[UserToken]:
 # Scope-based dependencies
 require_admin = require_scopes("admin")
 require_user = require_scopes("user")
+
+
+async def get_current_shop(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: AsyncSession = Depends(get_db)
+) -> Shop:
+    """Get current authenticated shop from JWT token."""
+    if not credentials:
+        raise UnauthorizedException("Not authenticated")
+    
+    token = credentials.credentials
+    payload = verify_token(token)
+    
+    if not payload:
+        raise TokenInvalidException("Invalid authentication credentials")
+    
+    # Check token type - Shop tokens use "shop_access" type
+    if payload.get("type") != "shop_access":
+        raise TokenInvalidException("Invalid token type")
+    
+    # Check token expiration
+    exp = payload.get("exp")
+    if exp and datetime.utcnow().timestamp() > exp:
+        raise TokenExpiredException("Token has expired")
+    
+    shop_id: Optional[str] = payload.get("sub")
+    if shop_id is None:
+        raise TokenInvalidException("Invalid token payload")
+    
+    # Get shop from database
+    shop_service = ShopService()
+    shop = await shop_service.get_shop_by_id(db, int(shop_id))
+    
+    if shop is None:
+        raise UnauthorizedException("Shop not found")
+    
+    if shop.is_deleted:
+        raise UnauthorizedException("Shop is deleted")
+    
+    return shop

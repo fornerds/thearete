@@ -7,6 +7,7 @@ Create Date: 2025-10-22 00:21:42.783723
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import text
 
 
 # revision identifiers, used by Alembic.
@@ -57,7 +58,7 @@ def upgrade() -> None:
     sa.Column('shop_id', sa.BigInteger(), nullable=False),
     sa.Column('name', sa.String(length=255), nullable=True, comment='고객명'),
     sa.Column('age', sa.Integer(), nullable=True, comment='나이'),
-    sa.Column('gender', sa.Enum('M', 'F', name='gender_enum'), nullable=True, comment='성별 (M/F)'),
+    sa.Column('gender', sa.Enum('M', 'F', name='gender_enum', create_type=False), nullable=True, comment='성별 (M/F)'),
     sa.Column('phone', sa.String(length=255), nullable=True, comment='연락처'),
     sa.Column('skin_type', sa.String(length=255), nullable=True, comment='피부타입'),
     sa.Column('note', sa.Text(), nullable=True, comment='특이사항'),

@@ -1,0 +1,43 @@
+"""Service layer for customer domain."""
+
+from app.db.models.customer import Customer
+from app.db.repositories.customer_repo import CustomerRepository
+from app.schemas import *
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List, Optional, Any
+
+class CustomerService:
+    """Service for customer domain operations."""
+    
+    def __init__(self):
+        self.repository = CustomerRepository()
+
+    async def create_customer(self, db: AsyncSession, request_data) -> Customer:
+        """Create new customer."""
+        # Convert request to dict if it's a Pydantic model
+        if hasattr(request_data, 'dict'):
+            customer_dict = request_data.dict()
+        else:
+            customer_dict = request_data
+        
+        # Ensure age is an integer if provided
+        if 'age' in customer_dict and customer_dict['age'] is not None:
+            try:
+                customer_dict['age'] = int(customer_dict['age'])
+            except (ValueError, TypeError):
+                customer_dict['age'] = None
+        
+        return await self.repository.create(db, customer_dict)
+    async def list_customers(self, db: AsyncSession, shop_id: Optional[int] = None, skip: int = 0, limit: int = 100) -> List[Customer]:
+        """List all customers, optionally filtered by shop_id."""
+        return await self.repository.get_all(db, shop_id=shop_id, skip=skip, limit=limit)
+    async def get_customer_by_id(self, db: AsyncSession, customer_id: int) -> Optional[Customer]:
+        """Get customer by ID."""
+        return await self.repository.get_by_id(db, customer_id)
+    async def update_customer(self, db: AsyncSession, customer_id: int, request_data) -> Optional[Customer]:
+        """Update customer by ID."""
+        return await self.repository.update(db, customer_id, request_data.dict() if hasattr(request_data, 'dict') else request_data)
+    async def delete_customer(self, db: AsyncSession, customer_id: int) -> bool:
+        """Delete customer by ID."""
+        return await self.repository.delete(db, customer_id)
+

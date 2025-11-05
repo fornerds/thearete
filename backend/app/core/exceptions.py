@@ -167,9 +167,19 @@ def create_error_response(
         path=path
     )
     
+    # Use model_dump with mode='json' to properly serialize datetime
+    try:
+        content = error_response.model_dump(mode='json')
+    except AttributeError:
+        # Fallback for older Pydantic versions
+        content = error_response.dict()
+        # Convert datetime objects to ISO format strings
+        import json
+        content = json.loads(json.dumps(content, default=str))
+    
     return JSONResponse(
         status_code=status_code,
-        content=error_response.dict()
+        content=content
     )
 
 

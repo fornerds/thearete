@@ -21,7 +21,7 @@ class Photo(Base):
     
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True, nullable=False)
     treatment_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("treatment.id"), nullable=False)
-    session_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("treatment_session.id"), nullable=False, comment="nullable (회차에 속하지 않을 수도 있음)")
+    session_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("treatment_session.id"), nullable=True, comment="nullable (회차에 속하지 않을 수도 있음)")
     photo_type: Mapped[Optional[str]] = mapped_column(String, comment="BEFORE | AFTER")
     file_url: Mapped[Optional[str]] = mapped_column(String(255), comment="저장 경로")
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.utcnow)
