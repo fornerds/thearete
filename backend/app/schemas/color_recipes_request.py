@@ -4,13 +4,9 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Any
 
 class Request25(BaseModel):
-    """Schema for color recipes_request_25"""
+    """Schema for color recipes_request_25 - Color recipe 생성 요청"""
     
-    session_id: int = Field(..., description="시술 회차 ID")
-    melanin: int = Field(..., description="멜라닌 투입량 (0~9)")
-    white: int = Field(..., description="화이트 투입량 (0~9)")
-    red: int = Field(..., description="레드 투입량 (0~9)")
-    yellow: int = Field(..., description="옐로우 투입량 (0~9)")
+    session_id: int = Field(..., description="시술 회차 ID (피부색 측정 데이터 기반으로 AI가 추천)")
 
 class Request26(BaseModel):
     """Schema for color recipes_request_26"""
