@@ -2,7 +2,7 @@
 
 import secrets
 from datetime import datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Union, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
@@ -35,12 +35,15 @@ from app.schemas.auth import (
     UserSessions,
     ShopLoginRequest,
     ShopLoginResponse,
-    ShopLogoutRequest
+    ShopLogoutRequest,
+    ShopProfile
 )
 from app.schemas.common import SuccessResponse
 from app.services.user_service import UserService
 from app.services.shop_service import ShopService
-from app.core.auth import get_current_user, get_current_shop
+from app.core.auth import get_current_user, get_current_shop, security
+from app.core.security import verify_token
+from fastapi.security import HTTPAuthorizationCredentials
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -108,9 +111,9 @@ async def user_login(
 
 @router.post(
     "/refresh",
-    response_model=TokenResponse,
+    response_model=Union[TokenResponse, ShopLoginResponse],
     summary="Refresh Access Token",
-    description="Refresh access token using valid refresh token",
+    description="Refresh access token using valid refresh token (supports both user and shop tokens)",
     responses={
         200: {"description": "Token refreshed successfully"},
         401: {"description": "Invalid or expired refresh token"},
@@ -120,16 +123,18 @@ async def user_login(
 async def refresh_token(
     refresh_data: RefreshTokenRequest,
     db: AsyncSession = Depends(get_db)
-) -> TokenResponse:
-    """Refresh access token endpoint."""
+) -> Union[TokenResponse, ShopLoginResponse]:
+    """Refresh access token endpoint (supports both user and shop tokens)."""
     # Verify refresh token
     payload = verify_token(refresh_data.refresh_token)
     
     if not payload:
         raise TokenInvalidException("Invalid refresh token")
     
-    # Check token type
-    if payload.get("type") != "refresh":
+    token_type = payload.get("type")
+    
+    # Check token type - support both user and shop refresh tokens
+    if token_type not in ["refresh", "shop_refresh"]:
         raise TokenInvalidException("Invalid token type")
     
     # Check token expiration
@@ -137,6 +142,52 @@ async def refresh_token(
     if exp and datetime.utcnow().timestamp() > exp:
         raise TokenExpiredException("Refresh token has expired")
     
+    # Handle shop refresh token
+    if token_type == "shop_refresh":
+        shop_id = payload.get("sub")
+        if not shop_id:
+            raise TokenInvalidException("Invalid token payload")
+        
+        shop_service = ShopService()
+        shop = await shop_service.get_shop_by_id(db, int(shop_id))
+        
+        if not shop:
+            raise UnauthorizedException("Shop not found")
+        
+        if shop.is_deleted:
+            raise UnauthorizedException("Shop is deleted")
+        
+        # Verify refresh token matches the one stored in Shop model
+        if shop.refresh_token != refresh_data.refresh_token:
+            raise TokenInvalidException("Refresh token does not match")
+        
+        # Check if refresh token has expired (stored expiry)
+        if shop.refresh_token_expiry and shop.refresh_token_expiry < datetime.utcnow():
+            raise TokenExpiredException("Refresh token has expired")
+        
+        # Create new tokens for shop
+        tokens = create_shop_tokens(shop.id, shop.email)
+        
+        # Update refresh token in Shop model
+        from sqlalchemy import update
+        refresh_expires = datetime.utcnow() + timedelta(days=7)
+        await db.execute(
+            update(Shop)
+            .where(Shop.id == shop.id)
+            .values(
+                refresh_token=tokens["refresh_token"],
+                refresh_token_expiry=refresh_expires
+            )
+        )
+        await db.commit()
+        
+        return ShopLoginResponse(
+            access_token=tokens["access_token"],
+            refresh_token=tokens["refresh_token"],
+            shop_id=shop.id
+        )
+    
+    # Handle user refresh token (original logic)
     # Check if token is revoked
     if await is_token_revoked(db, refresh_data.refresh_token):
         raise TokenInvalidException("Refresh token has been revoked")
@@ -217,19 +268,40 @@ async def logout(
 
 @router.get(
     "/me",
-    response_model=UserProfile,
-    summary="Get User Profile",
-    description="Get current user profile information",
+    response_model=Union[UserProfile, ShopProfile],
+    summary="Get Current Profile",
+    description="Get current user or shop profile information based on token type",
     responses={
-        200: {"description": "User profile retrieved successfully"},
+        200: {"description": "Profile retrieved successfully"},
         401: {"description": "Unauthorized"}
     }
 )
-async def get_current_user_profile(
-    current_user: User = Depends(get_current_user)
-) -> UserProfile:
-    """Get current user profile."""
-    return UserProfile.from_orm(current_user)
+async def get_current_profile(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: AsyncSession = Depends(get_db)
+) -> Union[UserProfile, ShopProfile]:
+    """Get current user or shop profile based on token type."""
+    if not credentials:
+        raise UnauthorizedException("Not authenticated")
+    
+    token = credentials.credentials
+    payload = verify_token(token)
+    
+    if not payload:
+        raise TokenInvalidException("Invalid authentication credentials")
+    
+    token_type = payload.get("type")
+    
+    if token_type == "access":
+        # User token
+        current_user = await get_current_user(credentials, db)
+        return UserProfile.from_orm(current_user)
+    elif token_type == "shop_access":
+        # Shop token
+        current_shop = await get_current_shop(credentials, db)
+        return ShopProfile.from_orm(current_shop)
+    else:
+        raise TokenInvalidException("Invalid token type")
 
 
 @router.get(

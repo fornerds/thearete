@@ -15,6 +15,12 @@ class ShopService:
 
     async def create_shop(self, db: AsyncSession, request_data: dict) -> Shop:
         """Create new shop."""
+        # Check email uniqueness
+        if "email" in request_data and request_data["email"]:
+            existing_shop = await self.get_shop_by_email(db, request_data["email"])
+            if existing_shop:
+                raise ValueError(f"이메일 '{request_data['email']}'은 이미 사용 중입니다.")
+        
         # Hash password if provided
         if "password" in request_data and request_data["password"]:
             # 추가 안전장치: 비밀번호 길이 검증

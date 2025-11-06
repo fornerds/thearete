@@ -180,3 +180,32 @@ class ShopLogoutRequest(BaseModel):
                 "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
             }
         }
+
+
+class ShopProfile(BaseModel):
+    """Shop profile response schema."""
+    id: int = Field(..., description="Shop ID")
+    name: Optional[str] = Field(None, description="Shop name")
+    address: Optional[str] = Field(None, description="Shop address")
+    owner_name: Optional[str] = Field(None, description="Owner name")
+    phone: Optional[str] = Field(None, description="Phone number")
+    email: Optional[str] = Field(None, description="Email address")
+    last_login_at: Optional[datetime] = Field(None, description="Last login time")
+    created_at: Optional[datetime] = Field(None, description="Account creation time")
+    updated_at: Optional[datetime] = Field(None, description="Last update time")
+    
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "name": "피부샵1",
+                "address": "경기도 성남시 분당구 111",
+                "owner_name": "김김김",
+                "phone": "010-2003-0303",
+                "email": "skincare1@skin.com",
+                "last_login_at": "2024-01-01T00:00:00Z",
+                "created_at": "2024-01-01T00:00:00Z",
+                "updated_at": "2024-01-01T00:00:00Z"
+            }
+        }

@@ -29,7 +29,27 @@ async def create_api_v1_shops(request: shop_request_1, db: AsyncSession = Depend
     # owner 필드를 owner_name으로 변환
     if "owner" in request_dict:
         request_dict["owner_name"] = request_dict.pop("owner")
-    result = await service.create_shop(db, request_dict)
+    
+    try:
+        result = await service.create_shop(db, request_dict)
+    except ValueError as e:
+        # 이메일 중복 또는 비밀번호 길이 오류 처리
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        # 데이터베이스 제약 조건 위반 (unique constraint 등)
+        if "unique" in str(e).lower() or "duplicate" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="이메일이 이미 사용 중입니다."
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Shop creation failed: {str(e)}"
+        )
+    
     if not result:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

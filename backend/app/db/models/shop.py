@@ -22,7 +22,7 @@ class Shop(Base):
     address: Mapped[Optional[str]] = mapped_column(String(255), comment="주소")
     owner_name: Mapped[Optional[str]] = mapped_column(String(255), comment="대표자명")
     phone: Mapped[Optional[str]] = mapped_column(String(255), comment="전화번호")
-    email: Mapped[Optional[str]] = mapped_column(String(255), comment="이메일 (로그인 ID)")
+    email: Mapped[Optional[str]] = mapped_column(String(255), unique=True, index=True, comment="이메일 (로그인 ID)")
     password: Mapped[Optional[str]] = mapped_column(String(255), comment="비밀번호 (암호화 저장)")
     refresh_token: Mapped[Optional[str]] = mapped_column(String(255), comment="현재 로그인 중인 Refresh Token 저장")
     refresh_token_expiry: Mapped[Optional[datetime]] = mapped_column(DateTime, comment="Refresh Token 만료 일시")
