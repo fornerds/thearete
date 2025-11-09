@@ -24,7 +24,13 @@ async def create_api_v1_customers(
     # 로그인한 Shop ID를 request에 추가
     request_dict = request.dict() if hasattr(request, 'dict') else request
     request_dict['shop_id'] = current_shop.id
-    result = await service.create_customer(db, request_dict)
+    try:
+        result = await service.create_customer(db, request_dict)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
     if not result:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

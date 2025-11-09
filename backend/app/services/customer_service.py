@@ -26,6 +26,20 @@ class CustomerService:
                 customer_dict['age'] = int(customer_dict['age'])
             except (ValueError, TypeError):
                 customer_dict['age'] = None
+
+        shop_id = customer_dict.get('shop_id')
+        phone = customer_dict.get('phone')
+        name = customer_dict.get('name')
+
+        if shop_id is not None and phone is not None and name is not None:
+            existing_customer = await self.repository.get_by_shop_phone_name(
+                db=db,
+                shop_id=shop_id,
+                phone=phone,
+                name=name,
+            )
+            if existing_customer:
+                raise ValueError("동일한 이름과 연락처를 가진 고객이 이미 존재합니다.")
         
         return await self.repository.create(db, customer_dict)
     async def list_customers(self, db: AsyncSession, shop_id: Optional[int] = None, skip: int = 0, limit: int = 100) -> List[Customer]:

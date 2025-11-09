@@ -148,8 +148,8 @@ class ShopLoginRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "email": "clinic@example.com",
-                "password": "abcd1234"
+                "email": "skincare1@skin.com",
+                "password": "qwer1234"
             }
         }
 

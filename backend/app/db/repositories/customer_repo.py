@@ -1,7 +1,7 @@
 """Repository layer for customer domain."""
 
 from app.db.models.customer import Customer
-from sqlalchemy import select, update, delete, insert
+from sqlalchemy import select, update, delete, insert, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from typing import List, Optional, Any
@@ -32,6 +32,25 @@ class CustomerRepository:
         await db.commit()
         await db.refresh(customer)
         return customer
+    
+    async def get_by_shop_phone_name(
+        self,
+        db: AsyncSession,
+        shop_id: int,
+        phone: Optional[str],
+        name: Optional[str],
+    ) -> Optional[Customer]:
+        """Get customer by shop, phone, and name combination."""
+        result = await db.execute(
+            select(Customer).where(
+                and_(
+                    Customer.shop_id == shop_id,
+                    Customer.phone == phone,
+                    Customer.name == name,
+                )
+            )
+        )
+        return result.scalar_one_or_none()
     
     async def update(self, db: AsyncSession, customer_id: int, customer_data: dict) -> Optional[Customer]:
         """Update customer by ID."""

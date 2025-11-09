@@ -7,6 +7,7 @@ from sqlalchemy import Enum
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer, BigInteger, SmallInteger
 from sqlalchemy import String, Text
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import relationship
 from typing import List, Optional
@@ -18,6 +19,14 @@ class Customer(Base):
     """Customer model."""
     
     __tablename__ = "customer"
+    __table_args__ = (
+        UniqueConstraint(
+            "shop_id",
+            "phone",
+            "name",
+            name="uq_customer_shop_phone_name",
+        ),
+    )
     
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True, nullable=False)
     shop_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("shop.id"), nullable=False)
