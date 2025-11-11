@@ -162,6 +162,9 @@ Temporary Items
 *.swo
 *~
 
+# Cursor MCP 설정 (민감한 정보 포함)
+.cursor
+
 # Logs
 *.log
 logs/
