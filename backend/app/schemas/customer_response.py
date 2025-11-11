@@ -9,18 +9,50 @@ class Response6(BaseModel):
     customer_id: Optional[str] = Field(None)
     created_at: Optional[str] = Field(None)
 
-class Response7(BaseModel):
-    """Schema for customer_response_7"""
+class TreatmentSessionSummary(BaseModel):
+    """Summary of a treatment session."""
+    
+    treatment_session_id: Optional[str] = Field(None)
+    treatment_date: Optional[str] = Field(None)
+    duration_minutes: Optional[int] = Field(None)
+    is_completed: Optional[bool] = Field(None)
+
+
+class TreatmentSummary(BaseModel):
+    """Summary of a customer's treatment."""
+    
+    treatment_id: Optional[str] = Field(None)
+    type: Optional[str] = Field(None)
+    area: Optional[str] = Field(None)
+    is_completed: Optional[bool] = Field(None)
+    sessions: List[TreatmentSessionSummary] = Field(default_factory=list)
+
+
+class Response7Customer(BaseModel):
+    """Single customer summary for list response."""
     
     customer_id: Optional[str] = Field(None)
     name: Optional[str] = Field(None)
+    gender: Optional[str] = Field(None)
+    age: Optional[int] = Field(None)
+    skin_type: Optional[str] = Field(None)
+    treatments: List[TreatmentSummary] = Field(default_factory=list)
+
+
+class Response7(BaseModel):
+    """Schema for customer_request_7"""
+    
+    customers: List[Response7Customer] = Field(default_factory=list)
 
 class Response8(BaseModel):
     """Schema for customer_response_8"""
     
     customer_id: Optional[str] = Field(None)
     name: Optional[str] = Field(None)
+    gender: Optional[str] = Field(None)
+    age: Optional[int] = Field(None)
     skin_type: Optional[str] = Field(None)
+    treatments: List[TreatmentSummary] = Field(default_factory=list)
 
 class Response9(BaseModel):
     """Schema for customer_response_9"""

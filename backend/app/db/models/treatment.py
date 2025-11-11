@@ -28,8 +28,17 @@ class Treatment(Base):
     is_deleted: Mapped[Optional[bool]] = mapped_column(Boolean)
 
     # Relationships
-    customer: Mapped["Customer"] = relationship("Customer", back_populates="treatment")
-    treatment_session: Mapped[List["TreatmentSession"]] = relationship("TreatmentSession", back_populates="treatment", cascade="all, delete-orphan")
+    customer: Mapped["Customer"] = relationship(
+        "Customer",
+        back_populates="treatment",
+        lazy="selectin",
+    )
+    treatment_session: Mapped[List["TreatmentSession"]] = relationship(
+        "TreatmentSession",
+        back_populates="treatment",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
     photo: Mapped[List["Photo"]] = relationship("Photo", back_populates="treatment", cascade="all, delete-orphan")
     def __repr__(self) -> str:
         return f"<Treatment(id={self.id}, customer_id='{self.customer_id}', type='{self.type}')>"

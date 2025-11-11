@@ -1,6 +1,7 @@
 """Repository layer for customer domain."""
 
 from app.db.models.customer import Customer
+from app.db.models.treatment import Treatment
 from sqlalchemy import select, update, delete, insert, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -12,13 +13,22 @@ class CustomerRepository:
     async def get_by_id(self, db: AsyncSession, customer_id: int) -> Optional[Customer]:
         """Get customer by ID."""
         result = await db.execute(
-            select(Customer).where(Customer.id == customer_id)
+            select(Customer)
+            .options(
+                selectinload(Customer.treatment).selectinload(Treatment.treatment_session)
+            )
+            .where(Customer.id == customer_id)
         )
         return result.scalar_one_or_none()
     
     async def get_all(self, db: AsyncSession, shop_id: Optional[int] = None, skip: int = 0, limit: int = 100) -> List[Customer]:
         """Get all customers with pagination, optionally filtered by shop_id."""
-        query = select(Customer)
+        query = (
+            select(Customer)
+            .options(
+                selectinload(Customer.treatment).selectinload(Treatment.treatment_session)
+            )
+        )
         if shop_id is not None:
             query = query.where(Customer.shop_id == shop_id)
         query = query.offset(skip).limit(limit)

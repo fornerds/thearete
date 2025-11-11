@@ -37,7 +37,11 @@ class TreatmentSession(Base):
     is_deleted: Mapped[Optional[bool]] = mapped_column(Boolean)
 
     # Relationships
-    treatment: Mapped["Treatment"] = relationship("Treatment", back_populates="treatment_session")
+    treatment: Mapped["Treatment"] = relationship(
+        "Treatment",
+        back_populates="treatment_session",
+        lazy="selectin",
+    )
     skin_color_measurement: Mapped[List["SkinColorMeasurement"]] = relationship("SkinColorMeasurement", back_populates="treatment_session", cascade="all, delete-orphan")
     photo: Mapped[List["Photo"]] = relationship("Photo", back_populates="treatment_session", cascade="all, delete-orphan")
     def __repr__(self) -> str:

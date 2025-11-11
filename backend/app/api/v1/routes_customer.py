@@ -13,6 +13,38 @@ from app.db.session import get_db
 
 router = APIRouter(prefix="/v1", tags=["customer"])
 
+
+def _format_customer_summary(customer) -> dict:
+    """Format customer with treatment summaries."""
+    treatments = [
+        {
+            "treatment_id": str(treatment.id),
+            "type": treatment.type,
+            "area": treatment.area,
+            "is_completed": treatment.is_completed,
+            "sessions": [
+                {
+                    "treatment_session_id": str(session.id),
+                    "treatment_date": session.treatment_date.isoformat() if session.treatment_date else None,
+                    "duration_minutes": session.duration_minutes,
+                    "is_completed": session.is_completed,
+                }
+                for session in treatment.treatment_session
+                if getattr(session, "is_deleted", False) is not True
+            ],
+        }
+        for treatment in customer.treatment
+        if getattr(treatment, "is_deleted", False) is not True
+    ]
+    return {
+        "customer_id": str(customer.id),
+        "name": customer.name,
+        "gender": customer.gender,
+        "age": customer.age,
+        "skin_type": customer.skin_type,
+        "treatments": treatments,
+    }
+
 @router.post("/customers", summary="고객 프로필 등록")
 async def create_api_v1_customers(
     request: customer_request_6, 
@@ -49,14 +81,8 @@ async def list_api_v1_customers(
     """고객 리스트 (로그인한 Shop의 고객만 조회)"""
     service = CustomerService()
     result = await service.list_customers(db, shop_id=current_shop.id)
-    # 빈 리스트도 정상 응답으로 반환
-    if not result:
-        return customer_response_7(customer_id=None, name=None)
-    
-    # Response7 스키마에 맞게 첫 번째 고객 반환 (스키마가 단일 객체 형태)
-    if result:
-        return customer_response_7(customer_id=str(result[0].id), name=result[0].name)
-    return customer_response_7(customer_id=None, name=None)
+    customers = [_format_customer_summary(customer) for customer in result]
+    return customer_response_7(customers=customers)
 
 @router.get("/customers/{id}", summary="고객 상세 정보")
 async def get_api_v1_customers_by_id(
@@ -78,11 +104,8 @@ async def get_api_v1_customers_by_id(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to access this customer"
         )
-    return customer_response_8(
-        customer_id=str(result.id),
-        name=result.name,
-        skin_type=result.skin_type
-    )
+    summary = _format_customer_summary(result)
+    return customer_response_8(**summary)
 
 @router.put("/customers/{id}", summary="고객 정보 수정")
 async def update_api_v1_customers_by_id(

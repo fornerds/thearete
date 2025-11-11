@@ -43,6 +43,11 @@ class Customer(Base):
 
     # Relationships
     shop: Mapped["Shop"] = relationship("Shop", back_populates="customer")
-    treatment: Mapped[List["Treatment"]] = relationship("Treatment", back_populates="customer", cascade="all, delete-orphan")
+    treatment: Mapped[List["Treatment"]] = relationship(
+        "Treatment",
+        back_populates="customer",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
     def __repr__(self) -> str:
         return f"<Customer(id={self.id}, shop_id='{self.shop_id}', name='{self.name}')>"

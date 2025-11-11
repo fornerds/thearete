@@ -12,7 +12,17 @@ class Request6(BaseModel):
     phone: Optional[str] = Field(None)
     skin_type: Optional[str] = Field(None)
     note: Optional[str] = Field(None)
-
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "김고갱",
+                "age": "23",
+                "gender": "M",
+                "phone": "010-1234-3456",
+                "skin_type": "건성",
+                "note": "노트 메모,,,"
+            }
+        }
 class Request7(BaseModel):
     """Schema for customer_request_7"""
     
