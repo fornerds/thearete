@@ -166,6 +166,9 @@ Temporary Items
 *.log
 logs/
 
+# Uploaded files
+uploads/
+
 # Database
 *.db
 *.sqlite
@@ -179,3 +182,6 @@ logs/
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# docs by ai
+dev_docs/
