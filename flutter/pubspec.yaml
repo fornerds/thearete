@@ -1,0 +1,61 @@
+name: thearete_clinic
+description: A clinic management app for customer and treatment management.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^2.5.1
+  
+  # Dependency Injection
+  get_it: ^7.6.7
+  
+  # Routing
+  go_router: ^13.2.0
+  
+  # Local Storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  
+  # Network
+  http: ^1.2.0
+  
+  # Permissions
+  permission_handler: ^11.3.0
+  
+  # Utilities
+  equatable: ^2.0.5
+  dartz: ^0.10.1
+  
+  # JSON Serialization
+  json_annotation: ^4.8.1
+  
+  # WebView for Daum Postcode
+  webview_flutter: ^4.4.2
+  webview_flutter_web: ^0.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  
+  # Code Generation
+  build_runner: ^2.4.7
+  json_serializable: ^6.7.1
+  hive_generator: ^2.0.1
+
+flutter:
+  uses-material-design: true
+  
+  # Assets (이미지, 아이콘 등)
+  assets:
+    - assets/images/logo.png
+    - assets/images/
+    - assets/icons/
+    - assets/illustrations/
