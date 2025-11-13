@@ -91,17 +91,31 @@ erDiagram
     }
 
     %% ───────────────────────────────
-    %% 5. 사진 관리 (시술전/후/회차별)
+    %% 6. 업로드된 이미지 원본
     %% ───────────────────────────────
-    PHOTO {
+    UPLOADED_IMAGE {
+        bigint id PK
+        string original_filename "원본 파일명"
+        string storage_path "스토리지 내 저장 경로 (유니크)"
+        string public_url "공개 접근 URL"
+        string content_type "MIME 타입"
+        int file_size "파일 크기 (바이트)"
+        string storage_backend "저장소 구분 (local, s3 등)"
+        datetime created_at
+        boolean is_deleted
+    }
+
+    %% ───────────────────────────────
+    %% 7. 시술 회차 이미지 매핑
+    %% ───────────────────────────────
+    TREATMENT_SESSION_IMAGE {
         bigint id PK
         bigint treatment_id FK
-        bigint session_id FK "nullable (회차에 속하지 않을 수도 있음)"
-        enum photo_type "BEFORE | AFTER"
-        string file_url "저장 경로"
+        bigint session_id FK
+        bigint uploaded_image_id FK
+        int sequence_no "표시 순서"
+        string photo_type "BEFORE | AFTER 등 (선택)"
         datetime created_at
-        datetime updated_at
-        boolean is_deleted
     }
 
     %% ───────────────────────────────
@@ -111,5 +125,6 @@ erDiagram
     CUSTOMER ||--o{ TREATMENT : "has many"
     TREATMENT ||--o{ TREATMENT_SESSION : "has many"
     TREATMENT_SESSION ||--o{ SKIN_COLOR_MEASUREMENT : "has many"
-    TREATMENT ||--o{ PHOTO : "has many"
-    TREATMENT_SESSION ||--o{ PHOTO : "has many (optional)"
+    TREATMENT_SESSION ||--o{ TREATMENT_SESSION_IMAGE : "has many"
+    TREATMENT ||--o{ TREATMENT_SESSION_IMAGE : "has many"
+    UPLOADED_IMAGE ||--o{ TREATMENT_SESSION_IMAGE : "has many"
