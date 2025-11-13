@@ -1,0 +1,14 @@
+@photo.py @treatment.py @treatment_session.py treatment,  treatment session,photo 관련 API를 전면 수정하려고해
+
+1. 이미지 파일 업로드 API 분리(이미지 저장, url 반환)
+- 실제 저장 로직은 서버 로컬 파일이스템 혹은 클라우드 스토리지(AWX S3, OCI) 등 옵션에 따라 유연하게 수정할 수 있도록 추상하 계층을 추가해 각각 구현
+기본은 서버의 로컬 파일 시스템 사용.
+- 업로드한 이미지 정보를 저장할 데이터 모델 추가
+
+2. treatment_session 등록시 파일이 아니라 url 배열로 입력 받아 저장
+- 이미지 url 과 treatment_id + treatment_session_id + seqNo 를 저장하여 이미지 파일과 treatment_session 을 매핑하는 테이블 생성 하여 저장
+
+3. treatment_session 저장시 사용하지 않는 이미지 
+업로드 이미지 관리 테이블과 treatment_session- 이미지 매핑 테이블 조인하여, 연결된 treatment_session 이 없는 이미지는 해당 경로에서 삭제
+
+위 내용을 단계별로 수행해줘
