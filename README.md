@@ -97,6 +97,7 @@ docker compose logs -f backend
 Cursor IDE에서 Figma 디자인을 Flutter 코드로 변환하고, 다양한 도구와 연동하기 위한 MCP 서버를 설정할 수 있습니다.
 
 **주요 기능**:
+
 - 🎨 **Talk to Figma MCP**: Figma 디자인을 Flutter 위젯 코드로 자동 변환, 텍스트 일괄 교체, 컴포넌트 오버라이드 전파 등
 - 🔍 **GitHub MCP**: 코드 검색 및 이슈 관리
 - 📁 **File System MCP**: 프로젝트 파일 탐색
@@ -104,6 +105,7 @@ Cursor IDE에서 Figma 디자인을 Flutter 코드로 변환하고, 다양한 �
 - 🗄️ **PostgreSQL/SQLite MCP**: 데이터베이스 쿼리 및 관리
 
 **빠른 시작**:
+
 ```bash
 # 1. Bun 설치 (Talk to Figma MCP 필수)
 curl -fsSL https://bun.sh/install | bash

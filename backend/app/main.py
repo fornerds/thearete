@@ -10,8 +10,6 @@ from fastapi.responses import JSONResponse
 from app.api.v1 import (
     routes_auth,
     routes_health,
-    routes_items,
-    routes_admin,
     routes_ai,
     routes_shop,
     routes_customer,
@@ -68,14 +66,6 @@ app = FastAPI(
             "description": "Health check and monitoring endpoints",
         },
         {
-            "name": "Items",
-            "description": "Item management operations",
-        },
-        {
-            "name": "Admin",
-            "description": "Administrative operations requiring admin privileges",
-        },
-        {
             "name": "AI",
             "description": "AI service operations for text completion and embeddings",
         },
@@ -101,8 +91,6 @@ register_exception_handlers(app)
 # Include routers
 app.include_router(routes_health.router, prefix="/v1")
 app.include_router(routes_auth.router, prefix="/v1")
-app.include_router(routes_items.router, prefix="/v1")
-app.include_router(routes_admin.router, prefix="/v1")
 app.include_router(routes_ai.router, prefix="/v1")
 app.include_router(routes_shop.router, prefix="/api")
 app.include_router(routes_customer.router, prefix="/api")

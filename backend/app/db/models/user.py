@@ -27,7 +27,6 @@ class User(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
     # Relationships
-    items: Mapped[List["Item"]] = relationship("Item", back_populates="owner", cascade="all, delete-orphan")
     tokens: Mapped[List["UserToken"]] = relationship("UserToken", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self) -> str:

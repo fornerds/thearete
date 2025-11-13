@@ -11,7 +11,6 @@ from sqlalchemy import select
 from app.core.security import get_password_hash
 from app.db.session import AsyncSessionLocal
 from app.db.models.user import User
-from app.db.models.item import Item
 from app.db.models.shop import Shop
 from app.db.models.customer import Customer
 from app.db.models.treatment import Treatment
@@ -342,53 +341,6 @@ async def create_sample_skin_measurements(
     return measurements
 
 
-async def create_sample_items(db: AsyncSession, users: List[User]) -> List[Item]:
-    """Create sample items."""
-    # Check if items already exist
-    result = await db.execute(select(Item))
-    existing_items = result.scalars().all()
-    
-    if existing_items:
-        logger.info("Sample items already exist, skipping creation")
-        return list(existing_items)
-    
-    items_data = [
-        {
-            "title": "프리미엄 스킨케어 세트",
-            "description": "고급 스킨케어 제품 세트",
-            "price": 150000,
-            "owner_id": users[0].id,  # Shop owner
-        },
-        {
-            "title": "메이크업 브러시 세트",
-            "description": "전문가용 메이크업 브러시",
-            "price": 80000,
-            "owner_id": users[0].id,
-        },
-        {
-            "title": "네일아트 도구",
-            "description": "네일아트에 필요한 기본 도구들",
-            "price": 30000,
-            "owner_id": users[0].id,
-        },
-    ]
-    
-    items = []
-    for item_data in items_data:
-        item = Item(**item_data)
-        db.add(item)
-        items.append(item)
-    
-    await db.commit()
-    
-    # Refresh all items to get IDs
-    for item in items:
-        await db.refresh(item)
-    
-    logger.info(f"Created {len(items)} sample items")
-    return items
-
-
 async def seed_database() -> None:
     """Seed the database with comprehensive sample data."""
     async with AsyncSessionLocal() as db:
@@ -408,12 +360,9 @@ async def seed_database() -> None:
             # Create sample customers
             customers = await create_sample_customers(db, shops)
             
-            # Create sample items
-            items = await create_sample_items(db, all_users)
-            
             logger.info("Database seeding completed successfully!")
             logger.info(f"Created: {len(all_users)} users, {len(shops)} shops, "
-                       f"{len(customers)} customers, {len(items)} items")
+                       f"{len(customers)} customers")
             
         except Exception as e:
             logger.error(f"Error seeding database: {e}")
