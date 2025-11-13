@@ -1,15 +1,21 @@
 """Pydantic request schemas for treatment photos domain."""
 
 from pydantic import BaseModel, Field
-from typing import List, Optional, Any
+from typing import List, Optional
+
+
+class SessionImagePayload(BaseModel):
+    url: str = Field(..., description="업로드된 이미지 URL")
+    sequence_no: Optional[int] = Field(None, description="정렬 순서")
+    type: Optional[str] = Field(None, description="사진 타입 (BEFORE/AFTER)")
+
 
 class Request27(BaseModel):
-    """Schema for treatment photos_request_27"""
-    
+    """Schema for attaching treatment session images."""
+
     treatment_id: int = Field(..., description="시술 ID")
-    session_id: Optional[int] = Field(None, description="시술 회차 ID (선택)")
-    type: str = Field(..., description="사진 타입 (BEFORE 또는 AFTER)")
-    image_url: str = Field(..., description="이미지 URL")
+    session_id: int = Field(..., description="시술 회차 ID")
+    images: List[SessionImagePayload] = Field(..., description="세션에 연결할 이미지 목록")
 
 class Request28(BaseModel):
     """Schema for treatment photos_request_28"""

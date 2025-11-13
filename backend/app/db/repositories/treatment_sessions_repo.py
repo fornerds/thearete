@@ -1,6 +1,7 @@
 """Repository layer for treatment sessions domain."""
 
 from app.db.models.treatment_session import TreatmentSession
+from app.db.models.treatment_session_image import TreatmentSessionImage
 from sqlalchemy import select, update, delete, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -15,9 +16,18 @@ class TreatmentSessionsRepository:
         from app.db.models.customer import Customer
         from sqlalchemy import or_
         
-        query = select(TreatmentSession).join(Treatment).join(Customer).where(
+        query = (
+            select(TreatmentSession)
+            .options(
+                selectinload(TreatmentSession.images).selectinload(TreatmentSessionImage.uploaded_image)
+            )
+            .join(Treatment)
+            .join(Customer)
+            .where(
             TreatmentSession.id == session_id
-        ).where(or_(TreatmentSession.is_deleted == False, TreatmentSession.is_deleted.is_(None)))
+            )
+            .where(or_(TreatmentSession.is_deleted == False, TreatmentSession.is_deleted.is_(None)))
+        )
         query = query.where(or_(Treatment.is_deleted == False, Treatment.is_deleted.is_(None)))
         
         if shop_id:
@@ -32,9 +42,18 @@ class TreatmentSessionsRepository:
         from app.db.models.customer import Customer
         from sqlalchemy import or_
         
-        query = select(TreatmentSession).join(Treatment).join(Customer).where(
-            or_(TreatmentSession.is_deleted == False, TreatmentSession.is_deleted.is_(None))
-        ).where(or_(Treatment.is_deleted == False, Treatment.is_deleted.is_(None)))
+        query = (
+            select(TreatmentSession)
+            .options(
+                selectinload(TreatmentSession.images).selectinload(TreatmentSessionImage.uploaded_image)
+            )
+            .join(Treatment)
+            .join(Customer)
+            .where(
+                or_(TreatmentSession.is_deleted == False, TreatmentSession.is_deleted.is_(None))
+            )
+            .where(or_(Treatment.is_deleted == False, Treatment.is_deleted.is_(None)))
+        )
         
         if treatment_id:
             query = query.where(TreatmentSession.treatment_id == treatment_id)

@@ -12,11 +12,19 @@ class TreatmentRepository:
     async def get_by_id(self, db: AsyncSession, treatment_id: int, shop_id: Optional[int] = None) -> Optional[Treatment]:
         """Get treatment by ID."""
         from app.db.models.customer import Customer
+        from app.db.models.treatment_session import TreatmentSession
+        from app.db.models.treatment_session_image import TreatmentSessionImage
         from sqlalchemy import or_
         
-        query = select(Treatment).join(Customer).where(
-            Treatment.id == treatment_id
-        ).where(or_(Treatment.is_deleted == False, Treatment.is_deleted.is_(None)))
+        query = (
+            select(Treatment)
+            .options(
+                selectinload(Treatment.treatment_session).selectinload(TreatmentSession.images).selectinload(TreatmentSessionImage.uploaded_image)
+            )
+            .join(Customer)
+            .where(Treatment.id == treatment_id)
+            .where(or_(Treatment.is_deleted == False, Treatment.is_deleted.is_(None)))
+        )
         
         if shop_id:
             query = query.where(Customer.shop_id == shop_id)
@@ -27,9 +35,18 @@ class TreatmentRepository:
     async def get_all(self, db: AsyncSession, skip: int = 0, limit: int = 100, customer_id: Optional[int] = None, shop_id: Optional[int] = None) -> List[Treatment]:
         """Get all treatments with pagination."""
         from app.db.models.customer import Customer
+        from app.db.models.treatment_session import TreatmentSession
+        from app.db.models.treatment_session_image import TreatmentSessionImage
         from sqlalchemy import or_
         
-        query = select(Treatment).join(Customer).where(or_(Treatment.is_deleted == False, Treatment.is_deleted.is_(None)))
+        query = (
+            select(Treatment)
+            .options(
+                selectinload(Treatment.treatment_session).selectinload(TreatmentSession.images).selectinload(TreatmentSessionImage.uploaded_image)
+            )
+            .join(Customer)
+            .where(or_(Treatment.is_deleted == False, Treatment.is_deleted.is_(None)))
+        )
         
         if customer_id:
             query = query.where(Treatment.customer_id == customer_id)

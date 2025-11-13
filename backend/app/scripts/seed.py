@@ -17,7 +17,6 @@ from app.db.models.customer import Customer
 from app.db.models.treatment import Treatment
 from app.db.models.treatment_session import TreatmentSession
 from app.db.models.skin_color_measurement import SkinColorMeasurement
-from app.db.models.photo import Photo
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +136,7 @@ async def create_sample_shops(db: AsyncSession, shop_owner: User) -> List[Shop]:
             "owner_name": "김샵오너",
             "phone": "02-1234-5678",
             "email": "seoul@beautyshop.com",
-            "password": "shop123!",
+            "password": get_password_hash("shop123!"),
             "is_deleted": False
         },
         {
@@ -146,7 +145,7 @@ async def create_sample_shops(db: AsyncSession, shop_owner: User) -> List[Shop]:
             "owner_name": "김샵오너",
             "phone": "051-2345-6789",
             "email": "busan@beautyshop.com",
-            "password": "shop123!",
+            "password": get_password_hash("shop123!"),
             "is_deleted": False
         }
     ]
@@ -341,42 +340,6 @@ async def create_sample_skin_measurements(
     
     logger.info(f"Created {len(measurements)} sample skin measurements")
     return measurements
-
-
-async def create_sample_photos(
-    db: AsyncSession, 
-    treatment_sessions: List[TreatmentSession]
-) -> List[Photo]:
-    """Create sample photos."""
-    # Check if photos already exist
-    result = await db.execute(select(Photo))
-    existing_photos = result.scalars().all()
-    
-    if existing_photos:
-        logger.info("Sample photos already exist, skipping creation")
-        return list(existing_photos)
-    
-    photos = []
-    for session in treatment_sessions[:3]:  # Only first 3 sessions get photos
-        photo = Photo(
-            treatment_session_id=session.id,
-            file_path=f"/photos/session_{session.id}_before.jpg",
-            file_type="before",
-            file_size=1024000,
-            uploaded_at=datetime(2024, 1, 15),
-            description=f"{session.customer.user.full_name}의 치료 전 사진"
-        )
-        db.add(photo)
-        photos.append(photo)
-    
-    await db.commit()
-    
-    # Refresh all photos to get IDs
-    for photo in photos:
-        await db.refresh(photo)
-    
-    logger.info(f"Created {len(photos)} sample photos")
-    return photos
 
 
 async def create_sample_items(db: AsyncSession, users: List[User]) -> List[Item]:

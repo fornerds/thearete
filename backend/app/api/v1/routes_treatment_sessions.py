@@ -1,17 +1,41 @@
 """FastAPI router for treatment sessions domain."""
 
 from app.schemas.treatment_sessions_request import Request16 as treatment_sessions_request_16, Request17 as treatment_sessions_request_17, Request18 as treatment_sessions_request_18, Request19 as treatment_sessions_request_19, Request20 as treatment_sessions_request_20, Request21 as treatment_sessions_request_21
-from app.schemas.treatment_sessions_response import Response16 as treatment_sessions_response_16, Response17 as treatment_sessions_response_17, Response18 as treatment_sessions_response_18, Response19 as treatment_sessions_response_19, Response20 as treatment_sessions_response_20, Response21 as treatment_sessions_response_21
+from app.schemas.treatment_sessions_response import (
+    Response16 as treatment_sessions_response_16,
+    Response17 as treatment_sessions_response_17,
+    Response18 as treatment_sessions_response_18,
+    Response19 as treatment_sessions_response_19,
+    Response20 as treatment_sessions_response_20,
+    Response21 as treatment_sessions_response_21,
+    SessionImageOutput,
+)
 from app.services.treatment_sessions_service import TreatmentSessionsService
 from app.core.auth import get_current_shop
 from app.db.models.shop import Shop
-from fastapi import APIRouter, Depends, HTTPException, status, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from typing import List, Optional
 from datetime import datetime
 
 router = APIRouter(prefix="/api/v1", tags=["treatment-sessions"])
+
+
+def _serialize_session_images(session) -> List[dict]:
+    images = getattr(session, "images", []) or []
+    serialized = []
+    for mapping in sorted(images, key=lambda item: item.sequence_no if item.sequence_no is not None else 0):
+        uploaded = getattr(mapping, "uploaded_image", None)
+        serialized.append(
+            {
+                "image_id": str(uploaded.id) if uploaded else None,
+                "url": uploaded.public_url if uploaded else None,
+                "sequence_no": mapping.sequence_no,
+                "type": mapping.photo_type,
+            }
+        )
+    return serialized
 
 @router.post("/treatment-sessions", summary="회차별 시술 기록")
 async def create_api_v1_treatment_sessions(
@@ -41,7 +65,13 @@ async def create_api_v1_treatment_sessions(
     if "duration" in request_dict:
         request_dict["duration_minutes"] = int(request_dict.pop("duration")) if request_dict.get("duration") else None
     
-    result = await service.create_treatment_session(db, request_dict, shop_id=current_shop.id)
+    try:
+        result = await service.create_treatment_session(db, request_dict, shop_id=current_shop.id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
     if not result:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -62,17 +92,20 @@ async def list_api_v1_treatment_sessions(
     service = TreatmentSessionsService()
     sessions = await service.list_treatment_sessions(db, treatment_id=treatment_id, shop_id=current_shop.id)
     
-    sessions_list = [
-        {
-            "session_id": str(s.id),
-            "treatment_id": s.treatment_id,
-            "date": s.treatment_date.isoformat() if s.treatment_date else None,
-            "duration": s.duration_minutes,
-            "is_completed": s.is_completed,
-            "created_at": s.created_at.isoformat() if s.created_at else None
-        }
-        for s in sessions
-    ]
+    sessions_list = []
+    for session in sessions:
+        images = _serialize_session_images(session)
+        sessions_list.append(
+            {
+                "session_id": str(session.id),
+                "treatment_id": session.treatment_id,
+                "date": session.treatment_date.isoformat() if session.treatment_date else None,
+                "duration": session.duration_minutes,
+                "is_completed": session.is_completed,
+                "created_at": session.created_at.isoformat() if session.created_at else None,
+                "images": images,
+            }
+        )
     
     return {"sessions": sessions_list}
 
@@ -90,10 +123,12 @@ async def get_api_v1_treatment_sessions_by_id(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Treatment session not found"
         )
+    images_data = _serialize_session_images(result)
     return treatment_sessions_response_18(
         session_id=str(result.id),
         duration=str(result.duration_minutes) if result.duration_minutes else None,
-        note=result.note
+        note=result.note,
+        images=[SessionImageOutput(**item) for item in images_data] if images_data else None,
     )
 
 @router.put("/treatment-sessions/{id}", summary="회차 정보 수정")
@@ -120,7 +155,13 @@ async def update_api_v1_treatment_sessions_by_id(
         except ValueError:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid date format. Use YYYY-MM-DD")
     
-    result = await service.update_treatment_session(db, id, request_dict, shop_id=current_shop.id)
+    try:
+        result = await service.update_treatment_session(db, id, request_dict, shop_id=current_shop.id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -159,14 +200,22 @@ async def patch_api_v1_treatment_sessions_by_id_complete(
     service = TreatmentSessionsService()
     is_result_entered = int(request.is_result_entered) if request.is_result_entered else 0
     request_dict = {"is_result_entered": is_result_entered}
-    result = await service.update_treatment_session(db, id, request_dict, shop_id=current_shop.id)
+    try:
+        result = await service.update_treatment_session(db, id, request_dict, shop_id=current_shop.id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Treatment session not found"
         )
+    images_data = _serialize_session_images(result)
     return treatment_sessions_response_21(
         session_id=str(result.id),
         is_result_entered=str(result.is_result_entered) if result.is_result_entered else "0",
-        message="Result entry status updated successfully"
+        message="Result entry status updated successfully",
+        images=[SessionImageOutput(**item) for item in images_data] if images_data else None,
     )

@@ -19,11 +19,13 @@ class Response13(BaseModel):
     
     treatment_id: str = Field(..., description="시술 ID")
     customer_id: int = Field(..., description="고객 ID")
+    name: Optional[str] = Field(None, description="시술명")
     type: Optional[str] = Field(None, description="시술 종류")
     area: Optional[str] = Field(None, description="시술 부위")
     is_completed: Optional[bool] = Field(None, description="완료 여부")
     created_at: Optional[str] = Field(None, description="생성일시")
     updated_at: Optional[str] = Field(None, description="수정일시")
+    sessions: Optional[List[dict]] = Field(default_factory=list, description="시술 회차 목록 (이미지 포함)")
 
 class Response14(BaseModel):
     """Schema for treatment_response_14"""

@@ -13,6 +13,42 @@ from typing import List, Optional
 
 router = APIRouter(prefix="/api/v1", tags=["treatment"])
 
+
+def _serialize_treatment_sessions(treatment) -> List[dict]:
+    """Serialize treatment sessions with images."""
+    sessions = getattr(treatment, "treatment_session", []) or []
+    serialized = []
+    for session in sessions:
+        # Skip deleted sessions
+        if getattr(session, "is_deleted", False) is True:
+            continue
+        
+        images = getattr(session, "images", []) or []
+        session_images = []
+        for mapping in sorted(images, key=lambda item: item.sequence_no if item.sequence_no is not None else 0):
+            uploaded = getattr(mapping, "uploaded_image", None)
+            session_images.append(
+                {
+                    "image_id": str(uploaded.id) if uploaded else None,
+                    "url": uploaded.public_url if uploaded else None,
+                    "sequence_no": mapping.sequence_no,
+                    "type": mapping.photo_type,
+                }
+            )
+        
+        serialized.append(
+            {
+                "session_id": str(session.id),
+                "treatment_id": session.treatment_id,
+                "date": session.treatment_date.isoformat() if session.treatment_date else None,
+                "duration": session.duration_minutes,
+                "is_completed": session.is_completed,
+                "created_at": session.created_at.isoformat() if session.created_at else None,
+                "images": session_images,
+            }
+        )
+    return serialized
+
 @router.post("/treatments", summary="고객별 시술 등록")
 async def create_api_v1_treatments(
     request: treatment_request_11, 
@@ -43,17 +79,21 @@ async def list_api_v1_treatments(
     service = TreatmentService()
     treatments = await service.list_treatments(db, customer_id=customer_id, shop_id=current_shop.id)
     
-    treatments_list = [
-        {
-            "treatment_id": str(t.id),
-            "customer_id": t.customer_id,
-            "type": t.type,
-            "area": t.area,
-            "is_completed": t.is_completed,
-            "created_at": t.created_at.isoformat() if t.created_at else None
-        }
-        for t in treatments
-    ]
+    treatments_list = []
+    for t in treatments:
+        sessions = _serialize_treatment_sessions(t)
+        treatments_list.append(
+            {
+                "treatment_id": str(t.id),
+                "customer_id": t.customer_id,
+                "name": t.name,
+                "type": t.type,
+                "area": t.area,
+                "is_completed": t.is_completed,
+                "created_at": t.created_at.isoformat() if t.created_at else None,
+                "sessions": sessions,
+            }
+        )
     
     return treatment_response_12(treatments=treatments_list)
 
@@ -71,14 +111,17 @@ async def get_api_v1_treatments_by_id(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Treatment not found"
         )
+    sessions = _serialize_treatment_sessions(result)
     return treatment_response_13(
         treatment_id=str(result.id),
         customer_id=result.customer_id,
+        name=result.name,
         type=result.type,
         area=result.area,
         is_completed=result.is_completed,
         created_at=result.created_at.isoformat() if result.created_at else None,
-        updated_at=result.updated_at.isoformat() if result.updated_at else None
+        updated_at=result.updated_at.isoformat() if result.updated_at else None,
+        sessions=sessions,
     )
 
 @router.put("/treatments/{id}", summary="시술 정보 수정")

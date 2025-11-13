@@ -79,6 +79,20 @@ class Settings(BaseSettings):
         description="Circuit breaker recovery timeout in seconds"
     )
 
+    # File uploads
+    upload_root: str = Field(
+        default="uploads",
+        description="Directory where uploaded files are stored"
+    )
+    upload_url_prefix: str = Field(
+        default="/uploads",
+        description="URL prefix for serving uploaded files"
+    )
+    upload_backend: str = Field(
+        default="local",
+        description="Storage backend for uploaded files (local, s3, oci, ...)"
+    )
+
     # Database Seeding
     seed_on_start: bool = Field(
         default=False,

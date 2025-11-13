@@ -20,6 +20,7 @@ class Treatment(Base):
     
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True, nullable=False)
     customer_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("customer.id"), nullable=False)
+    name: Mapped[Optional[str]] = mapped_column(String(255), comment="시술명")
     type: Mapped[Optional[str]] = mapped_column(String(255), comment="시술 종류 (튼살-경, 튼살-중, 백반증, 흉터 등)")
     area: Mapped[Optional[str]] = mapped_column(String(255), comment="시술 부위 (얼굴, 목, 팔, 다리, 입술 등)")
     is_completed: Mapped[Optional[bool]] = mapped_column(Boolean, comment="시술 완료 여부")
@@ -39,6 +40,10 @@ class Treatment(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
-    photo: Mapped[List["Photo"]] = relationship("Photo", back_populates="treatment", cascade="all, delete-orphan")
+    images: Mapped[List["TreatmentSessionImage"]] = relationship(
+        "TreatmentSessionImage",
+        back_populates="treatment",
+        cascade="all, delete-orphan",
+    )
     def __repr__(self) -> str:
-        return f"<Treatment(id={self.id}, customer_id='{self.customer_id}', type='{self.type}')>"
+        return f"<Treatment(id={self.id}, customer_id='{self.customer_id}', name='{self.name}', type='{self.type}')>"

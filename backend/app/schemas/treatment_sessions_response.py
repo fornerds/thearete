@@ -3,6 +3,15 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Any
 
+
+class SessionImageOutput(BaseModel):
+    """세션 이미지 정보."""
+
+    image_id: Optional[str] = Field(None)
+    url: Optional[str] = Field(None)
+    sequence_no: Optional[int] = Field(None)
+    type: Optional[str] = Field(None)
+
 class Response16(BaseModel):
     """Schema for treatment sessions_response_16"""
     
@@ -21,6 +30,7 @@ class Response18(BaseModel):
     session_id: Optional[str] = Field(None)
     duration: Optional[str] = Field(None)
     note: Optional[str] = Field(None)
+    images: Optional[List[SessionImageOutput]] = Field(None)
 
 class Response19(BaseModel):
     """Schema for treatment sessions_response_19"""
@@ -38,4 +48,5 @@ class Response21(BaseModel):
     session_id: Optional[str] = Field(None)
     is_result_entered: Optional[str] = Field(None)
     message: Optional[str] = Field(None)
+    images: Optional[List[SessionImageOutput]] = Field(None)
 

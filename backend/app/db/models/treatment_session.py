@@ -43,6 +43,10 @@ class TreatmentSession(Base):
         lazy="selectin",
     )
     skin_color_measurement: Mapped[List["SkinColorMeasurement"]] = relationship("SkinColorMeasurement", back_populates="treatment_session", cascade="all, delete-orphan")
-    photo: Mapped[List["Photo"]] = relationship("Photo", back_populates="treatment_session", cascade="all, delete-orphan")
+    images: Mapped[List["TreatmentSessionImage"]] = relationship(
+        "TreatmentSessionImage",
+        back_populates="session",
+        cascade="all, delete-orphan",
+    )
     def __repr__(self) -> str:
         return f"<TreatmentSession(id={self.id}, treatment_id='{self.treatment_id}', treatment_date='{self.treatment_date}')>"

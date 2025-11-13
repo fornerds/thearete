@@ -7,9 +7,24 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.v1 import routes_auth, routes_health, routes_items, routes_admin, routes_ai, routes_shop, routes_customer, routes_treatment, routes_treatment_sessions, routes_skin_measurements, routes_color_recipes, routes_treatment_photos
+from app.api.v1 import (
+    routes_auth,
+    routes_health,
+    routes_items,
+    routes_admin,
+    routes_ai,
+    routes_shop,
+    routes_customer,
+    routes_treatment,
+    routes_treatment_sessions,
+    routes_skin_measurements,
+    routes_color_recipes,
+    routes_treatment_photos,
+    routes_uploads,
+)
 from app.config import settings
 from app.core.exceptions import register_exception_handlers
+from app.core.uploads import get_upload_root
 from app.db.session import create_tables
 
 
@@ -67,6 +82,10 @@ app = FastAPI(
     ],
 )
 
+# Upload directory initialization (files are served via Nginx X-Accel-Redirect)
+# Static file serving is handled by Nginx, not FastAPI
+upload_root = get_upload_root(settings.upload_root)
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -92,6 +111,8 @@ app.include_router(routes_treatment_sessions.router)
 app.include_router(routes_skin_measurements.router)
 app.include_router(routes_color_recipes.router)
 app.include_router(routes_treatment_photos.router)
+app.include_router(routes_uploads.router)
+app.include_router(routes_uploads.download_router)
 
 
 @app.get("/")
