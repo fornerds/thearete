@@ -11,7 +11,7 @@ from app.db.session import get_db
 from typing import List, Optional
 from datetime import datetime
 
-router = APIRouter(prefix="/api/v1", tags=["skin-measurements"])
+router = APIRouter(prefix="/v1", tags=["skin-measurements"])
 
 @router.post("/skin-measurements", summary="시술 회차별 피부색 데이터 등록")
 async def create_api_v1_skin_measurements(

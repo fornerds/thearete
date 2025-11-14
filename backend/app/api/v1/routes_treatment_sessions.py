@@ -19,7 +19,7 @@ from app.db.session import get_db
 from typing import List, Optional
 from datetime import datetime
 
-router = APIRouter(prefix="/api/v1", tags=["treatment-sessions"])
+router = APIRouter(prefix="/v1", tags=["treatment-sessions"])
 
 
 def _serialize_session_images(session) -> List[dict]:

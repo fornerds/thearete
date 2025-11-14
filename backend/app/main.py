@@ -89,17 +89,17 @@ app.add_middleware(
 register_exception_handlers(app)
 
 # Include routers
-app.include_router(routes_health.router, prefix="/v1")
-app.include_router(routes_auth.router, prefix="/v1")
-app.include_router(routes_ai.router, prefix="/v1")
+app.include_router(routes_health.router, prefix="/api")
+app.include_router(routes_auth.router, prefix="/api")
+app.include_router(routes_ai.router, prefix="/api")
 app.include_router(routes_shop.router, prefix="/api")
 app.include_router(routes_customer.router, prefix="/api")
-app.include_router(routes_treatment.router)
-app.include_router(routes_treatment_sessions.router)
-app.include_router(routes_skin_measurements.router)
-app.include_router(routes_color_recipes.router)
-app.include_router(routes_treatment_photos.router)
-app.include_router(routes_uploads.router)
+app.include_router(routes_treatment.router, prefix="/api")
+app.include_router(routes_treatment_sessions.router, prefix="/api")
+app.include_router(routes_skin_measurements.router, prefix="/api")
+app.include_router(routes_color_recipes.router, prefix="/api")
+app.include_router(routes_treatment_photos.router, prefix="/api")
+app.include_router(routes_uploads.router, prefix="/api")
 app.include_router(routes_uploads.download_router)
 
 
@@ -112,6 +112,6 @@ async def root() -> JSONResponse:
             "version": settings.app_version,
             "docs": "/docs",
             "redoc": "/redoc",
-            "health": "/v1/health",
+            "health": "/api/v1/health",
         }
     )

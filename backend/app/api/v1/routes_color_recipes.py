@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from typing import List, Optional
 
-router = APIRouter(prefix="/api/v1", tags=["color-recipes"])
+router = APIRouter(prefix="/v1", tags=["color-recipes"])
 
 @router.post("/color-recipes", summary="컬러 레시피 등록 (AI 추천)")
 async def create_api_v1_color_recipes(

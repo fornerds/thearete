@@ -14,7 +14,7 @@ from app.db.session import get_db
 from app.schemas.common import HealthResponse, ServiceHealth, HealthStatus
 from app.ai.client import AIClient
 
-router = APIRouter(prefix="/health", tags=["Health"])
+router = APIRouter(prefix="/v1/health", tags=["Health"])
 
 # Track application start time
 app_start_time = time.time()

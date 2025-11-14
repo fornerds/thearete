@@ -18,7 +18,7 @@ from app.schemas.treatment_photos_response import (
 )
 from app.services.treatment_photos_service import TreatmentPhotosService
 
-router = APIRouter(prefix="/api/v1", tags=["treatment-photos"])
+router = APIRouter(prefix="/v1", tags=["treatment-photos"])
 
 
 @router.post(

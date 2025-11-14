@@ -45,7 +45,7 @@ from app.core.auth import get_current_user, get_current_shop, security
 from app.core.security import verify_token
 from fastapi.security import HTTPAuthorizationCredentials
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(prefix="/v1/auth", tags=["Authentication"])
 
 
 @router.post(

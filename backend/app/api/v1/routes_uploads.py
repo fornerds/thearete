@@ -13,7 +13,7 @@ from app.db.repositories.uploaded_image_repo import UploadedImageRepository
 from app.schemas.uploads_response import UploadImagesResponse, UploadedImageItem
 from app.services.upload_service import UploadService
 
-router = APIRouter(prefix="/api/v1/uploads", tags=["uploads"])
+router = APIRouter(prefix="/v1/uploads", tags=["uploads"])
 
 # 동적으로 다운로드 라우터 생성: UPLOAD_URL_PREFIX 설정값 사용
 # prefix에서 앞의 슬래시 제거 (예: "/uploads" -> "uploads")

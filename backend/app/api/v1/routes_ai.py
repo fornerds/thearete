@@ -18,7 +18,7 @@ from app.core.exceptions import BaseAPIException
 from app.db.models.user import User
 from app.schemas.common import ErrorCode, ErrorResponse, SuccessResponse
 
-router = APIRouter(prefix="/ai", tags=["AI"])
+router = APIRouter(prefix="/v1/ai", tags=["AI"])
 
 
 class CompletionRequest(BaseModel):
