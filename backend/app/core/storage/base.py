@@ -16,6 +16,9 @@ class StoredFile:
     public_url: str
     content_type: str | None = None
     size: int | None = None
+    thumbnail_storage_path: str | None = None
+    thumbnail_url: str | None = None
+    thumbnail_size: int | None = None
 
 
 class BaseStorage(Protocol):

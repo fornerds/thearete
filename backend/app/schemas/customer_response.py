@@ -9,6 +9,16 @@ class Response6(BaseModel):
     customer_id: Optional[str] = Field(None)
     created_at: Optional[str] = Field(None)
 
+class TreatmentSessionImageInfo(BaseModel):
+    """Detailed info for treatment session images."""
+
+    image_id: Optional[str] = Field(None)
+    url: Optional[str] = Field(None)
+    thumbnail_url: Optional[str] = Field(None)
+    sequence_no: Optional[int] = Field(None)
+    type: Optional[str] = Field(None)
+
+
 class TreatmentSessionSummary(BaseModel):
     """Summary of a treatment session."""
     
@@ -16,6 +26,8 @@ class TreatmentSessionSummary(BaseModel):
     treatment_date: Optional[str] = Field(None)
     duration_minutes: Optional[int] = Field(None)
     is_completed: Optional[bool] = Field(None)
+    before_images: List[TreatmentSessionImageInfo] = Field(default_factory=list)
+    after_images: List[TreatmentSessionImageInfo] = Field(default_factory=list)
 
 
 class TreatmentSummary(BaseModel):

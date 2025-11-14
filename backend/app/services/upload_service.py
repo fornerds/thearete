@@ -33,8 +33,11 @@ class UploadService:
                     "original_filename": upload.filename,
                     "storage_path": stored.storage_path,
                     "public_url": stored.public_url,
+                    "thumbnail_storage_path": stored.thumbnail_storage_path,
+                    "thumbnail_url": stored.thumbnail_url,
                     "content_type": stored.content_type,
                     "file_size": stored.size,
+                    "thumbnail_size": stored.thumbnail_size,
                     "storage_backend": type(self._storage).__name__.replace("Storage", "").lower(),
                 }
                 record = await self._repository.create(db, payload)
@@ -43,5 +46,7 @@ class UploadService:
         except Exception:
             for stored in stored_files:
                 await self._storage.delete(stored.storage_path)
+                if stored.thumbnail_storage_path:
+                    await self._storage.delete(stored.thumbnail_storage_path)
             raise
 

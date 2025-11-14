@@ -55,6 +55,7 @@ async def create_api_v1_treatment_photos(
                 "session_id": mapping.session_id,
                 "type": mapping.photo_type,
                 "image_url": mapping.uploaded_image.public_url if mapping.uploaded_image else None,
+                "thumbnail_url": mapping.uploaded_image.thumbnail_url if mapping.uploaded_image else None,
                 "created_at": mapping.created_at.isoformat() if mapping.created_at else None,
             }
             for mapping in mappings
@@ -85,6 +86,7 @@ async def list_api_v1_treatment_photos(
             "session_id": mapping.session_id,
             "type": mapping.photo_type,
             "image_url": mapping.uploaded_image.public_url if mapping.uploaded_image else None,
+            "thumbnail_url": mapping.uploaded_image.thumbnail_url if mapping.uploaded_image else None,
             "created_at": mapping.created_at.isoformat() if mapping.created_at else None,
         }
         for mapping in mappings

@@ -14,30 +14,64 @@ from app.db.session import get_db
 router = APIRouter(prefix="/v1", tags=["customer"])
 
 
-def _format_customer_summary(customer) -> dict:
+def _format_customer_summary(customer, include_images: bool = False) -> dict:
     """Format customer with treatment summaries."""
     from datetime import datetime
-    
-    treatments = [
-        {
-            "treatment_id": str(treatment.id),
-            "type": treatment.type,
-            "area": treatment.area,
-            "is_completed": treatment.is_completed,
-            "sessions": [
-                {
-                    "treatment_session_id": str(session.id),
-                    "treatment_date": session.treatment_date.isoformat() if session.treatment_date else None,
-                    "duration_minutes": session.duration_minutes,
-                    "is_completed": session.is_completed,
-                }
-                for session in treatment.treatment_session
-                if getattr(session, "is_deleted", False) is not True
-            ],
-        }
-        for treatment in customer.treatment
-        if getattr(treatment, "is_deleted", False) is not True
-    ]
+
+    def _group_session_images(session):
+        images = getattr(session, "images", []) or []
+        before_images = []
+        after_images = []
+        sorted_images = sorted(
+            images,
+            key=lambda item: item.sequence_no if item.sequence_no is not None else 0,
+        )
+        for mapping in sorted_images:
+            uploaded = getattr(mapping, "uploaded_image", None)
+            image_payload = {
+                "image_id": str(uploaded.id) if uploaded else None,
+                "url": uploaded.public_url if uploaded else None,
+                "thumbnail_url": uploaded.thumbnail_url if uploaded else None,
+                "sequence_no": mapping.sequence_no,
+                "type": mapping.photo_type,
+            }
+            photo_type = (mapping.photo_type or "BEFORE").upper()
+            if photo_type == "AFTER":
+                after_images.append(image_payload)
+            else:
+                before_images.append(image_payload)
+        return before_images, after_images
+
+    treatments = []
+    for treatment in customer.treatment:
+        if getattr(treatment, "is_deleted", False) is True:
+            continue
+
+        sessions = []
+        for session in treatment.treatment_session:
+            if getattr(session, "is_deleted", False) is True:
+                continue
+            session_payload = {
+                "treatment_session_id": str(session.id),
+                "treatment_date": session.treatment_date.isoformat() if session.treatment_date else None,
+                "duration_minutes": session.duration_minutes,
+                "is_completed": session.is_completed,
+            }
+            if include_images:
+                before_images, after_images = _group_session_images(session)
+                session_payload["before_images"] = before_images
+                session_payload["after_images"] = after_images
+            sessions.append(session_payload)
+
+        treatments.append(
+            {
+                "treatment_id": str(treatment.id),
+                "type": treatment.type,
+                "area": treatment.area,
+                "is_completed": treatment.is_completed,
+                "sessions": sessions,
+            }
+        )
     
     # 최신 업데이트 시간 계산
     # 고객정보 생성/수정 시간, treatment 등록/수정시간, treatment session 등록/수정 중 가장 최신일시
@@ -166,7 +200,7 @@ async def get_api_v1_customers_by_id(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to access this customer"
         )
-    summary = _format_customer_summary(result)
+    summary = _format_customer_summary(result, include_images=True)
     return customer_response_8(**summary)
 
 @router.put("/customers/{id}", summary="고객 정보 수정")

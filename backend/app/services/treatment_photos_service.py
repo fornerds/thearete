@@ -92,6 +92,8 @@ class TreatmentPhotosService:
             if not remaining:
                 storage = get_storage()
                 await storage.delete(uploaded_image.storage_path)
+                if uploaded_image.thumbnail_storage_path:
+                    await storage.delete(uploaded_image.thumbnail_storage_path)
                 await self.uploaded_image_repository.mark_deleted(
                     db,
                     [uploaded_image.id],

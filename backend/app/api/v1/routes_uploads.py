@@ -53,6 +53,7 @@ async def upload_images(
                 image_id=str(record.id),
                 url=record.public_url,
                 original_filename=record.original_filename,
+                thumbnail_url=record.thumbnail_url,
             )
             for record in records
         ]

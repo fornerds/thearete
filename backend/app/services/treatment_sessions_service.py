@@ -235,6 +235,8 @@ class TreatmentSessionsService:
         storage = get_storage()
         for image in orphan_images:
             await storage.delete(image.storage_path)
+            if image.thumbnail_storage_path:
+                await storage.delete(image.thumbnail_storage_path)
         await self.uploaded_image_repository.mark_deleted(
             db,
             [image.id for image in orphan_images],

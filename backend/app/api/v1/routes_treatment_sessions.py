@@ -31,6 +31,7 @@ def _serialize_session_images(session) -> List[dict]:
             {
                 "image_id": str(uploaded.id) if uploaded else None,
                 "url": uploaded.public_url if uploaded else None,
+                "thumbnail_url": uploaded.thumbnail_url if uploaded else None,
                 "sequence_no": mapping.sequence_no,
                 "type": mapping.photo_type,
             }

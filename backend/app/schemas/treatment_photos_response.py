@@ -11,6 +11,7 @@ class PhotoMetadata(BaseModel):
     session_id: Optional[int] = Field(None)
     type: Optional[str] = Field(None)
     image_url: Optional[str] = Field(None)
+    thumbnail_url: Optional[str] = Field(None)
     created_at: Optional[str] = Field(None)
 
 
@@ -25,6 +26,7 @@ class Response28(BaseModel):
     photo_id: Optional[str] = Field(None)
     type: Optional[str] = Field(None)
     image_url: Optional[str] = Field(None)
+    thumbnail_url: Optional[str] = Field(None)
 
 class Response29(BaseModel):
     """Schema for treatment photos_response_29"""

@@ -3,6 +3,8 @@
 from app.db.models.customer import Customer
 from app.db.models.treatment import Treatment
 from app.db.models.treatment_session import TreatmentSession
+from app.db.models.treatment_session_image import TreatmentSessionImage
+from app.db.models.uploaded_image import UploadedImage
 from sqlalchemy import select, update, delete, insert, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -17,7 +19,10 @@ class CustomerRepository:
         result = await db.execute(
             select(Customer)
             .options(
-                selectinload(Customer.treatment).selectinload(Treatment.treatment_session)
+                selectinload(Customer.treatment)
+                .selectinload(Treatment.treatment_session)
+                .selectinload(TreatmentSession.images)
+                .selectinload(TreatmentSessionImage.uploaded_image)
             )
             .where(Customer.id == customer_id)
         )
@@ -37,7 +42,10 @@ class CustomerRepository:
         query = (
             select(Customer)
             .options(
-                selectinload(Customer.treatment).selectinload(Treatment.treatment_session)
+                selectinload(Customer.treatment)
+                .selectinload(Treatment.treatment_session)
+                .selectinload(TreatmentSession.images)
+                .selectinload(TreatmentSessionImage.uploaded_image)
             )
         )
         if shop_id is not None:
