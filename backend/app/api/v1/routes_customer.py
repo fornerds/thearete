@@ -1,11 +1,11 @@
 """FastAPI router for customer domain."""
 
-from app.schemas.customer_request import Request6 as customer_request_6, Request7 as customer_request_7, Request8 as customer_request_8, Request9 as customer_request_9, Request10 as customer_request_10
-from app.schemas.customer_response import Response6 as customer_response_6, Response7 as customer_response_7, Response8 as customer_response_8, Response9 as customer_response_9, Response10 as customer_response_10
+from app.schemas.customer_request import Request6 as customer_request_6, Request7 as customer_request_7, Request8 as customer_request_8, Request9 as customer_request_9, Request10 as customer_request_10, Request11 as customer_request_11
+from app.schemas.customer_response import Response6 as customer_response_6, Response7 as customer_response_7, Response8 as customer_response_8, Response9 as customer_response_9, Response10 as customer_response_10, Response11 as customer_response_11
 from app.services.customer_service import CustomerService
 from app.core.auth import get_current_shop
 from app.db.models.shop import Shop
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from fastapi import Path
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +16,8 @@ router = APIRouter(prefix="/v1", tags=["customer"])
 
 def _format_customer_summary(customer) -> dict:
     """Format customer with treatment summaries."""
+    from datetime import datetime
+    
     treatments = [
         {
             "treatment_id": str(treatment.id),
@@ -36,12 +38,39 @@ def _format_customer_summary(customer) -> dict:
         for treatment in customer.treatment
         if getattr(treatment, "is_deleted", False) is not True
     ]
+    
+    # 최신 업데이트 시간 계산
+    # 고객정보 생성/수정 시간, treatment 등록/수정시간, treatment session 등록/수정 중 가장 최신일시
+    times = []
+    if customer.created_at:
+        times.append(customer.created_at)
+    if customer.updated_at:
+        times.append(customer.updated_at)
+    # Treatment 시간
+    for treatment in customer.treatment:
+        if getattr(treatment, "is_deleted", False) is not True:
+            if treatment.created_at:
+                times.append(treatment.created_at)
+            if treatment.updated_at:
+                times.append(treatment.updated_at)
+            # TreatmentSession 시간
+            for session in treatment.treatment_session:
+                if getattr(session, "is_deleted", False) is not True:
+                    if session.created_at:
+                        times.append(session.created_at)
+                    if session.updated_at:
+                        times.append(session.updated_at)
+    
+    latest_update_time = max(times).isoformat() if times else None
+    
     return {
         "customer_id": str(customer.id),
         "name": customer.name,
         "gender": customer.gender,
         "age": customer.age,
         "skin_type": customer.skin_type,
+        "marked": customer.marked,
+        "latest_update_time": latest_update_time,
         "treatments": treatments,
     }
 
@@ -198,4 +227,45 @@ async def delete_api_v1_customers_by_id(
             detail="Customer not found"
         )
     return result
+
+@router.patch("/customers/{id}/marked", summary="고객 상단 고정 토글/수정")
+async def update_customer_marked(
+    id: int = Path(..., description="고객 ID"), 
+    request: Optional[customer_request_11] = Body(None),
+    current_shop: Shop = Depends(get_current_shop),
+    db: AsyncSession = Depends(get_db)
+) -> customer_response_11:
+    """고객 상단 고정 상태 토글 또는 수정 (로그인한 Shop의 고객만 수정 가능)
+    
+    - marked가 None이면 현재 상태를 토글 (1 -> 0, 0 또는 None -> 1)
+    - marked가 1이면 고정
+    - marked가 0이면 해제
+    """
+    service = CustomerService()
+    # 먼저 고객이 현재 Shop에 속하는지 확인
+    customer = await service.get_customer_by_id(db, id)
+    if not customer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Customer not found"
+        )
+    if customer.shop_id != current_shop.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to update this customer"
+        )
+    
+    marked_value = request.marked if request else None
+    result = await service.update_marked(db, id, marked_value)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Customer not found"
+        )
+    
+    return customer_response_11(
+        customer_id=str(result.id),
+        marked=result.marked,
+        updated_at=result.updated_at.isoformat() if result.updated_at else None
+    )
 

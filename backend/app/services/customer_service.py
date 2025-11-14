@@ -71,4 +71,8 @@ class CustomerService:
     async def delete_customer(self, db: AsyncSession, customer_id: int) -> bool:
         """Delete customer by ID."""
         return await self.repository.delete(db, customer_id)
+    
+    async def update_marked(self, db: AsyncSession, customer_id: int, marked_value: Optional[int] = None) -> Optional[Customer]:
+        """Update or toggle marked status for customer."""
+        return await self.repository.update_marked(db, customer_id, marked_value)
 

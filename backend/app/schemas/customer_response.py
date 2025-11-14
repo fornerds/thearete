@@ -36,6 +36,8 @@ class Response7Customer(BaseModel):
     gender: Optional[str] = Field(None)
     age: Optional[int] = Field(None)
     skin_type: Optional[str] = Field(None)
+    marked: Optional[int] = Field(None, description="상단 고정 여부 (1: 고정, 0 또는 null: 일반)")
+    latest_update_time: Optional[str] = Field(None, description="최신 업데이트 시간 (ISO format)")
     treatments: List[TreatmentSummary] = Field(default_factory=list)
 
 
@@ -52,6 +54,8 @@ class Response8(BaseModel):
     gender: Optional[str] = Field(None)
     age: Optional[int] = Field(None)
     skin_type: Optional[str] = Field(None)
+    marked: Optional[int] = Field(None, description="상단 고정 여부 (1: 고정, 0 또는 null: 일반)")
+    latest_update_time: Optional[str] = Field(None, description="최신 업데이트 시간 (ISO format)")
     treatments: List[TreatmentSummary] = Field(default_factory=list)
 
 class Response9(BaseModel):
@@ -63,4 +67,11 @@ class Response10(BaseModel):
     """Schema for customer_response_10"""
     
     deleted_at: Optional[str] = Field(None)
+
+class Response11(BaseModel):
+    """Schema for customer_response_11 - Update marked status response"""
+    
+    customer_id: Optional[str] = Field(None)
+    marked: Optional[int] = Field(None, description="상단 고정 여부 (1: 고정, 0 또는 null: 일반)")
+    updated_at: Optional[str] = Field(None)
 

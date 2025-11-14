@@ -53,6 +53,15 @@ class CustomerRepository:
         result = await db.execute(query)
         customers = result.scalars().all()
         
+        # marked=1인 고객과 일반 고객 분리
+        marked_customers = []
+        normal_customers = []
+        for customer in customers:
+            if customer.marked == 1:
+                marked_customers.append(customer)
+            else:
+                normal_customers.append(customer)
+        
         # Python에서 정렬 처리 (복잡한 정렬 로직)
         try:
             if sort_by == 1:
@@ -81,11 +90,17 @@ class CustomerRepository:
                                         times.append(session.updated_at)
                     return max(times) if times else None
                 
-                customers = sorted(
-                    customers,
+                marked_customers = sorted(
+                    marked_customers,
                     key=lambda c: (get_latest_update_time(c) or datetime.min),
                     reverse=(sort_order == "desc")
                 )
+                normal_customers = sorted(
+                    normal_customers,
+                    key=lambda c: (get_latest_update_time(c) or datetime.min),
+                    reverse=(sort_order == "desc")
+                )
+                customers = marked_customers + normal_customers
             elif sort_by == 2:
                 # 정렬 기준 2: 최근 시술 순
                 # treatment_session 등록/수정시간 우선 비교, 다음으로 treatment 등록/수정 시간 비교
@@ -111,34 +126,58 @@ class CustomerRepository:
                                     times.append(treatment.updated_at)
                     return max(times) if times else None
                 
-                # 시술 기록이 있는 고객과 없는 고객을 분리
-                customers_with_treatment = []
-                customers_without_treatment = []
-                for customer in customers:
+                # 일반 고객: 시술 기록이 있는 고객과 없는 고객을 분리
+                normal_with_treatment = []
+                normal_without_treatment = []
+                for customer in normal_customers:
                     latest_time = get_latest_treatment_time(customer)
                     if latest_time:
-                        customers_with_treatment.append((customer, latest_time))
+                        normal_with_treatment.append((customer, latest_time))
                     else:
-                        customers_without_treatment.append(customer)
+                        normal_without_treatment.append(customer)
                 
                 # 시술 기록이 있는 고객 정렬
-                customers_with_treatment.sort(
+                normal_with_treatment.sort(
                     key=lambda x: x[1],
                     reverse=(sort_order == "desc")
                 )
                 
                 # 시술 기록이 없는 고객은 항상 뒤로
-                customers = [c for c, _ in customers_with_treatment] + customers_without_treatment
+                normal_sorted = [c for c, _ in normal_with_treatment] + normal_without_treatment
+                
+                # marked 고객도 같은 방식으로 정렬
+                marked_with_treatment = []
+                marked_without_treatment = []
+                for customer in marked_customers:
+                    latest_time = get_latest_treatment_time(customer)
+                    if latest_time:
+                        marked_with_treatment.append((customer, latest_time))
+                    else:
+                        marked_without_treatment.append(customer)
+                
+                marked_with_treatment.sort(
+                    key=lambda x: x[1],
+                    reverse=(sort_order == "desc")
+                )
+                marked_sorted = [c for c, _ in marked_with_treatment] + marked_without_treatment
+                
+                customers = marked_sorted + normal_sorted
             elif sort_by == 3:
                 # 정렬 기준 3: 고객명 가나다 순
                 def get_customer_name(customer: Customer) -> str:
                     return customer.name or ""
                 
-                customers = sorted(
-                    customers,
+                marked_customers = sorted(
+                    marked_customers,
                     key=get_customer_name,
                     reverse=(sort_order == "desc")
                 )
+                normal_customers = sorted(
+                    normal_customers,
+                    key=get_customer_name,
+                    reverse=(sort_order == "desc")
+                )
+                customers = marked_customers + normal_customers
         except Exception as e:
             # 정렬 중 오류 발생 시 원본 리스트 반환
             import logging
@@ -195,6 +234,29 @@ class CustomerRepository:
         )
         await db.commit()
         return result.rowcount > 0
+    
+    async def update_marked(self, db: AsyncSession, customer_id: int, marked_value: Optional[int] = None) -> Optional[Customer]:
+        """Update or toggle marked status for customer."""
+        customer = await self.get_by_id(db, customer_id)
+        if not customer:
+            return None
+        
+        # marked_value가 None이면 toggle (1 -> 0, 0 또는 None -> 1)
+        if marked_value is None:
+            new_marked = 1 if (customer.marked is None or customer.marked == 0) else 0
+        else:
+            new_marked = marked_value
+        
+        result = await db.execute(
+            update(Customer)
+            .where(Customer.id == customer_id)
+            .values(marked=new_marked)
+        )
+        await db.commit()
+        
+        if result.rowcount > 0:
+            return await self.get_by_id(db, customer_id)
+        return None
 
 
 

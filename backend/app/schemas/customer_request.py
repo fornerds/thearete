@@ -43,4 +43,9 @@ class Request10(BaseModel):
     """Schema for customer_request_10"""
     
 
+class Request11(BaseModel):
+    """Schema for customer_request_11 - Update marked status"""
+    
+    marked: Optional[int] = Field(None, description="상단 고정 여부 (1: 고정, 0: 해제, null: toggle)")
+
 
