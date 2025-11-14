@@ -39,6 +39,9 @@ dependencies:
   # WebView for Daum Postcode
   webview_flutter: ^4.4.2
   webview_flutter_web: ^0.2.2
+  
+  # SVG Support
+  flutter_svg: ^2.0.9
 
 dev_dependencies:
   flutter_test:
