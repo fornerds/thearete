@@ -64,7 +64,8 @@ async def create_api_v1_treatment_sessions(
             request_dict["treatment_date"] = None
     # Map duration to duration_minutes
     if "duration" in request_dict:
-        request_dict["duration_minutes"] = int(request_dict.pop("duration")) if request_dict.get("duration") else None
+        duration_value = request_dict.pop("duration", None)
+        request_dict["duration_minutes"] = int(duration_value) if duration_value is not None else None
     
     try:
         result = await service.create_treatment_session(db, request_dict, shop_id=current_shop.id)
@@ -146,7 +147,8 @@ async def update_api_v1_treatment_sessions_by_id(
     request_dict = request.dict(exclude_unset=True)
     # Map duration to duration_minutes
     if "duration" in request_dict:
-        request_dict["duration_minutes"] = int(request_dict.pop("duration")) if request_dict.get("duration") else None
+        duration_value = request_dict.pop("duration", None)
+        request_dict["duration_minutes"] = int(duration_value) if duration_value is not None else None
     # Map date to treatment_date if provided
     if "date" in request_dict and request_dict["date"]:
         try:
