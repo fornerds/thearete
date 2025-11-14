@@ -18,6 +18,26 @@ def _format_customer_summary(customer, include_images: bool = False) -> dict:
     """Format customer with treatment summaries."""
     from datetime import datetime
 
+    def _treatment_latest_update_time(treatment):
+        timestamps = []
+        for attr in ("created_at", "updated_at"):
+            value = getattr(treatment, attr, None)
+            if value:
+                timestamps.append(value)
+        for session in getattr(treatment, "treatment_session", []) or []:
+            if getattr(session, "is_deleted", False):
+                continue
+            for attr in ("created_at", "updated_at"):
+                value = getattr(session, attr, None)
+                if value:
+                    timestamps.append(value)
+            for image in getattr(session, "images", []) or []:
+                for attr in ("created_at", "updated_at"):
+                    value = getattr(image, attr, None)
+                    if value:
+                        timestamps.append(value)
+        return max(timestamps) if timestamps else None
+
     def _group_session_images(session):
         images = getattr(session, "images", []) or []
         before_images = []
@@ -42,7 +62,8 @@ def _format_customer_summary(customer, include_images: bool = False) -> dict:
                 before_images.append(image_payload)
         return before_images, after_images
 
-    treatments = []
+    treatments_with_latest = []
+    treatment_latest_map = {}
     for treatment in customer.treatment:
         if getattr(treatment, "is_deleted", False) is True:
             continue
@@ -63,18 +84,32 @@ def _format_customer_summary(customer, include_images: bool = False) -> dict:
                 session_payload["after_images"] = after_images
             sessions.append(session_payload)
 
-        treatments.append(
-            {
-                "treatment_id": str(treatment.id),
-                "type": treatment.type,
-                "area": treatment.area,
-                "is_completed": treatment.is_completed,
-                "sessions": sessions,
-            }
+        treatment_latest = _treatment_latest_update_time(treatment)
+        treatment_latest_map[getattr(treatment, "id")] = treatment_latest
+        treatments_with_latest.append(
+            (
+                treatment_latest,
+                {
+                    "treatment_id": str(treatment.id),
+                    "type": treatment.type,
+                    "area": treatment.area,
+                    "is_completed": treatment.is_completed,
+                    "sessions": sessions,
+                    "created_at": treatment.created_at.isoformat() if treatment.created_at else None,
+                    "latest_update_time": treatment_latest.isoformat() if treatment_latest else None,
+                },
+            )
         )
+
+    treatments_with_latest.sort(
+        key=lambda item: item[0] if item[0] is not None else datetime.min,
+        reverse=True,
+    )
+    treatments = [payload for _, payload in treatments_with_latest]
     
     # 최신 업데이트 시간 계산
-    # 고객정보 생성/수정 시간, treatment 등록/수정시간, treatment session 등록/수정 중 가장 최신일시
+    # 고객정보 생성/수정 시간, treatment 등록/수정시간, treatment session 등록/수정,
+    # treatment session image 등록/수정 중 가장 최신일시
     times = []
     if customer.created_at:
         times.append(customer.created_at)
@@ -87,13 +122,22 @@ def _format_customer_summary(customer, include_images: bool = False) -> dict:
                 times.append(treatment.created_at)
             if treatment.updated_at:
                 times.append(treatment.updated_at)
-            # TreatmentSession 시간
+            # TreatmentSession 및 이미지 시간
             for session in treatment.treatment_session:
                 if getattr(session, "is_deleted", False) is not True:
                     if session.created_at:
                         times.append(session.created_at)
                     if session.updated_at:
                         times.append(session.updated_at)
+                    for image in getattr(session, "images", []) or []:
+                        if image.created_at:
+                            times.append(image.created_at)
+                        updated_at = getattr(image, "updated_at", None)
+                        if updated_at:
+                            times.append(updated_at)
+            treatment_latest = treatment_latest_map.get(getattr(treatment, "id"))
+            if treatment_latest:
+                times.append(treatment_latest)
     
     latest_update_time = max(times).isoformat() if times else None
     

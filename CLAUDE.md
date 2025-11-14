@@ -14,4 +14,10 @@
    "password": "qwer1234"
    }
 7. Database나 model 변경 시에는 alembic 명령어로 migration 파일을 생성 및 적용합니다.
-8. backend, database, nginx 등은 docker compose로 기동 및 관리합니다.
+8. backend, database, nginx 등은 docker compose로 기동 및 관리합니다.  
+   (backend 관련 docker compose 파일은 backend 폴더 하위에 위치)
+9. pytest 등 테스트 코드를 실행할 경우, 반드시 `docker exec` 명령어를 사용하여 backend 컨테이너 내부에서 실행합니다.
+   예시:
+   ```
+   docker compose -f backend/docker-compose.yml exec backend pytest
+   ```

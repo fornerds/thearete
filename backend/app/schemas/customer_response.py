@@ -38,6 +38,10 @@ class TreatmentSummary(BaseModel):
     area: Optional[str] = Field(None)
     is_completed: Optional[bool] = Field(None)
     sessions: List[TreatmentSessionSummary] = Field(default_factory=list)
+    created_at: Optional[str] = Field(None, description="treatment 등록 일자 (ISO format)")
+    latest_update_time: Optional[str] = Field(
+        None, description="최신 treatment 업데이트 시간 (ISO format)"
+    )
 
 
 class Response7Customer(BaseModel):
