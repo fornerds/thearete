@@ -36,7 +36,8 @@ from app.schemas.auth import (
     ShopLoginRequest,
     ShopLoginResponse,
     ShopLogoutRequest,
-    ShopProfile
+    ShopProfile,
+    ShopUpdateRequest
 )
 from app.schemas.common import SuccessResponse
 from app.services.user_service import UserService
@@ -302,6 +303,48 @@ async def get_current_profile(
         return ShopProfile.from_orm(current_shop)
     else:
         raise TokenInvalidException("Invalid token type")
+
+
+@router.put(
+    "/me",
+    response_model=ShopProfile,
+    summary="Update Shop Profile",
+    description="Update current shop profile information (name, address, owner_name, phone)",
+    responses={
+        200: {"description": "Profile updated successfully"},
+        401: {"description": "Unauthorized"}
+    }
+)
+async def update_shop_profile(
+    update_data: ShopUpdateRequest,
+    current_shop: Shop = Depends(get_current_shop),
+    db: AsyncSession = Depends(get_db)
+) -> ShopProfile:
+    """Update current shop profile."""
+    # Prepare update data (only include fields that are not None)
+    update_dict = {}
+    if update_data.name is not None:
+        update_dict["name"] = update_data.name
+    if update_data.address is not None:
+        update_dict["address"] = update_data.address
+    if update_data.owner_name is not None:
+        update_dict["owner_name"] = update_data.owner_name
+    if update_data.phone is not None:
+        update_dict["phone"] = update_data.phone
+    
+    # Update shop
+    shop_service = ShopService()
+    updated_shop = await shop_service.update_shop(db, current_shop.id, update_dict)
+    
+    if not updated_shop:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Shop not found"
+        )
+    
+    await db.refresh(updated_shop)
+    
+    return ShopProfile.from_orm(updated_shop)
 
 
 @router.get(

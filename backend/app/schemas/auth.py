@@ -209,3 +209,21 @@ class ShopProfile(BaseModel):
                 "updated_at": "2024-01-01T00:00:00Z"
             }
         }
+
+
+class ShopUpdateRequest(BaseModel):
+    """Shop profile update request schema."""
+    name: Optional[str] = Field(None, description="Shop name")
+    address: Optional[str] = Field(None, description="Shop address")
+    owner_name: Optional[str] = Field(None, description="Owner name")
+    phone: Optional[str] = Field(None, description="Phone number")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "피부샵1",
+                "address": "경기도 성남시 분당구 111",
+                "owner_name": "김김김",
+                "phone": "010-2003-0303"
+            }
+        }
