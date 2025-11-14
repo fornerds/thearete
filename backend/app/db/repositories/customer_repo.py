@@ -247,10 +247,11 @@ class CustomerRepository:
         else:
             new_marked = marked_value
         
+        # pinned(=marked) 변경 시 updated_at이 갱신되어 정렬 순서가 변하지 않도록 기존 값을 유지
         result = await db.execute(
             update(Customer)
             .where(Customer.id == customer_id)
-            .values(marked=new_marked)
+            .values(marked=new_marked, updated_at=customer.updated_at)
         )
         await db.commit()
         
