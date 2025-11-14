@@ -3,6 +3,13 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Any
 
+class SessionImageInput(BaseModel):
+    """이미지 매핑 입력."""
+
+    url: str = Field(..., description="업로드된 이미지 URL")
+    sequence_no: Optional[int] = Field(None, description="표시 순서 (0부터 시작)")
+    type: Optional[str] = Field(None, description="사진 타입 (BEFORE/AFTER)")
+
 class Request11(BaseModel):
     """Schema for treatment_request_11"""
     
@@ -10,6 +17,7 @@ class Request11(BaseModel):
     name: Optional[str] = Field(None, description="시술명")
     type: Optional[str] = Field(None, description="시술 종류")
     area: Optional[str] = Field(None, description="시술 부위")
+    images: Optional[List[SessionImageInput]] = Field(default_factory=list, description="시술 1회차에 연결할 이미지 목록")
 
 class Request12(BaseModel):
     """Schema for treatment_request_12"""

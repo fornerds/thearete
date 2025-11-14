@@ -40,6 +40,7 @@ def _serialize_treatment_sessions(treatment) -> List[dict]:
             {
                 "session_id": str(session.id),
                 "treatment_id": session.treatment_id,
+                "sequence": session.sequence,
                 "date": session.treatment_date.isoformat() if session.treatment_date else None,
                 "duration": session.duration_minutes,
                 "is_completed": session.is_completed,

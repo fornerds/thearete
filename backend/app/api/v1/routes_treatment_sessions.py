@@ -99,6 +99,7 @@ async def list_api_v1_treatment_sessions(
             {
                 "session_id": str(session.id),
                 "treatment_id": session.treatment_id,
+                "sequence": session.sequence,
                 "date": session.treatment_date.isoformat() if session.treatment_date else None,
                 "duration": session.duration_minutes,
                 "is_completed": session.is_completed,
@@ -126,6 +127,7 @@ async def get_api_v1_treatment_sessions_by_id(
     images_data = _serialize_session_images(result)
     return treatment_sessions_response_18(
         session_id=str(result.id),
+        sequence=result.sequence,
         duration=str(result.duration_minutes) if result.duration_minutes else None,
         note=result.note,
         images=[SessionImageOutput(**item) for item in images_data] if images_data else None,

@@ -14,7 +14,7 @@ class TreatmentService:
         self.repository = TreatmentRepository()
 
     async def create_treatment(self, db: AsyncSession, request_data: Dict[str, Any], shop_id: Optional[int] = None) -> Treatment:
-        """Create new treatment."""
+        """Create new treatment and first treatment session with images."""
         # Verify that customer belongs to the shop
         if shop_id:
             from app.db.models.customer import Customer
@@ -32,7 +32,47 @@ class TreatmentService:
                 if customer.shop_id != shop_id:
                     raise ForbiddenException("Customer does not belong to your shop")
         
-        return await self.repository.create(db, request_data)
+        # Extract images from request_data
+        images_payload = request_data.pop("images", [])
+        
+        # Create treatment
+        treatment = await self.repository.create(db, request_data)
+        
+        # Create first treatment session automatically
+        from app.services.treatment_sessions_service import TreatmentSessionsService
+        from datetime import datetime
+        
+        session_service = TreatmentSessionsService()
+        # First session always has sequence = 1
+        session_data = {
+            "treatment_id": treatment.id,
+            "sequence": 1,
+            "treatment_date": datetime.utcnow().date(),
+            "is_completed": False,
+        }
+        
+        session = await session_service.repository.create(db, session_data)
+        
+        # Connect images to the first session if provided
+        if images_payload:
+            # Convert Pydantic models to dict if needed
+            images_dict = []
+            for img in images_payload:
+                if isinstance(img, dict):
+                    images_dict.append(img)
+                else:
+                    images_dict.append(img.dict() if hasattr(img, 'dict') else img)
+            
+            await session_service.set_session_images(
+                db,
+                treatment_id=treatment.id,
+                session_id=session.id,
+                images_payload=images_dict,
+            )
+        
+        # Refresh treatment to get updated relationships
+        await db.refresh(treatment)
+        return treatment
     
     async def list_treatments(self, db: AsyncSession, customer_id: Optional[int] = None, shop_id: Optional[int] = None, skip: int = 0, limit: int = 100) -> List[Treatment]:
         """List all treatments."""

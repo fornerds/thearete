@@ -28,6 +28,7 @@ class Response18(BaseModel):
     """Schema for treatment sessions_response_18"""
     
     session_id: Optional[str] = Field(None)
+    sequence: Optional[int] = Field(None, description="회차 번호")
     duration: Optional[str] = Field(None)
     note: Optional[str] = Field(None)
     images: Optional[List[SessionImageOutput]] = Field(None)

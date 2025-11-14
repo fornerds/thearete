@@ -26,13 +26,14 @@ class TreatmentSessionsService:
     ) -> TreatmentSession:
         """Create new treatment session."""
         images_payload = request_data.pop("images", [])
+        treatment_id = request_data.get("treatment_id")
+        
         if shop_id:
             from app.core.exceptions import ForbiddenException
             from app.db.models.customer import Customer
             from app.db.models.treatment import Treatment
             from sqlalchemy import or_, select
 
-            treatment_id = request_data.get("treatment_id")
             if treatment_id:
                 result = await db.execute(
                     select(Treatment)
@@ -44,6 +45,22 @@ class TreatmentSessionsService:
                 treatment = result.scalar_one_or_none()
                 if not treatment:
                     raise ForbiddenException("Treatment not found or does not belong to your shop")
+
+        # Calculate sequence: count existing sessions for this treatment + 1
+        if treatment_id:
+            from app.db.models.treatment_session import TreatmentSession
+            from sqlalchemy import select, func, or_
+            
+            result = await db.execute(
+                select(func.count(TreatmentSession.id))
+                .where(TreatmentSession.treatment_id == treatment_id)
+                .where(or_(TreatmentSession.is_deleted == False, TreatmentSession.is_deleted.is_(None)))
+            )
+            existing_count = result.scalar() or 0
+            request_data["sequence"] = existing_count + 1
+        else:
+            # If treatment_id is not provided, default to 1 (should not happen in normal flow)
+            request_data["sequence"] = 1
 
         session = await self.repository.create(db, request_data)
         if images_payload:
@@ -153,14 +170,31 @@ class TreatmentSessionsService:
             raise ValueError(f"다음 이미지가 존재하지 않거나 권한이 없습니다: {', '.join(missing_urls)}")
 
         mappings = []
+        used_sequences = set()
+        next_available = 0
+        
         for index, payload in enumerate(images_payload):
             url = payload.get("url")
             if not url:
                 continue
             image = url_to_image[url]
             sequence = payload.get("sequence_no")
+            
+            # If sequence_no is not provided or already used, find next available
             if sequence is None:
-                sequence = index
+                # Find next available sequence number
+                while next_available in used_sequences:
+                    next_available += 1
+                sequence = next_available
+                next_available += 1
+            elif sequence in used_sequences:
+                # If explicitly set sequence_no is already used, find next available
+                while next_available in used_sequences:
+                    next_available += 1
+                sequence = next_available
+                next_available += 1
+            
+            used_sequences.add(sequence)
             mappings.append(
                 {
                     "treatment_id": treatment_id,
