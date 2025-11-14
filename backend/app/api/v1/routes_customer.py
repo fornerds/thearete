@@ -5,7 +5,7 @@ from app.schemas.customer_response import Response6 as customer_response_6, Resp
 from app.services.customer_service import CustomerService
 from app.core.auth import get_current_shop
 from app.db.models.shop import Shop
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi import Path
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -75,12 +75,45 @@ async def create_api_v1_customers(
 
 @router.get("/customers", summary="고객 리스트")
 async def list_api_v1_customers(
+    sort: Optional[int] = Query(1, description="정렬 기준 (1: 최근 업데이트 순, 2: 최근 시술 순, 3: 고객명 순)"),
+    order: Optional[str] = Query(None, description="정렬 방향 (asc: 오름차순, desc: 내림차순)"),
+    search: Optional[str] = Query(None, description="고객명 검색 (LIKE 검색)"),
     current_shop: Shop = Depends(get_current_shop),
     db: AsyncSession = Depends(get_db)
 ) -> customer_response_7:
-    """고객 리스트 (로그인한 Shop의 고객만 조회)"""
+    """고객 리스트 (로그인한 Shop의 고객만 조회)
+    
+    정렬 기준:
+    - 1: 최근 업데이트 순 (기본값: desc)
+    - 2: 최근 시술 순 (기본값: desc)
+    - 3: 고객명 가나다 순 (기본값: asc)
+    """
+    # sort_by 검증
+    if sort not in [1, 2, 3]:
+        sort = 1
+    
+    # sort_order가 제공되지 않으면 정렬 기준에 따라 기본값 설정
+    if order is None:
+        if sort == 3:
+            order = "asc"  # 고객명은 기본 오름차순
+        else:
+            order = "desc"  # 업데이트/시술 순은 기본 내림차순
+    
+    # order 검증
+    if order not in ["asc", "desc"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="order는 'asc' 또는 'desc'만 가능합니다."
+        )
+    
     service = CustomerService()
-    result = await service.list_customers(db, shop_id=current_shop.id)
+    result = await service.list_customers(
+        db, 
+        shop_id=current_shop.id,
+        sort_by=sort,
+        sort_order=order,
+        search=search
+    )
     customers = [_format_customer_summary(customer) for customer in result]
     return customer_response_7(customers=customers)
 

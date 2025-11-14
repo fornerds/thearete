@@ -42,9 +42,26 @@ class CustomerService:
                 raise ValueError("동일한 이름과 연락처를 가진 고객이 이미 존재합니다.")
         
         return await self.repository.create(db, customer_dict)
-    async def list_customers(self, db: AsyncSession, shop_id: Optional[int] = None, skip: int = 0, limit: int = 100) -> List[Customer]:
-        """List all customers, optionally filtered by shop_id."""
-        return await self.repository.get_all(db, shop_id=shop_id, skip=skip, limit=limit)
+    async def list_customers(
+        self, 
+        db: AsyncSession, 
+        shop_id: Optional[int] = None, 
+        skip: int = 0, 
+        limit: int = 100,
+        sort_by: int = 1,
+        sort_order: str = "desc",
+        search: Optional[str] = None
+    ) -> List[Customer]:
+        """List all customers, optionally filtered by shop_id, search term, and sorted."""
+        return await self.repository.get_all(
+            db, 
+            shop_id=shop_id, 
+            skip=skip, 
+            limit=limit,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            search=search
+        )
     async def get_customer_by_id(self, db: AsyncSession, customer_id: int) -> Optional[Customer]:
         """Get customer by ID."""
         return await self.repository.get_by_id(db, customer_id)
