@@ -112,12 +112,17 @@ class UploadedImageRepository:
         url: str,
         shop_id: int,
     ) -> UploadedImage | None:
-        """Get uploaded image by URL and verify shop access through treatment session.
+        """Get uploaded image by URL (original or thumbnail) and verify shop access.
         
         First tries to find image linked to treatment session (with shop check).
         If not found, tries to find unlinked image (no shop check - TODO: add shop_id to uploaded_image).
         """
         # First, try to find image linked to treatment session (with shop check)
+        url_match = or_(
+            UploadedImage.public_url == url,
+            UploadedImage.thumbnail_url == url,
+        )
+
         stmt = (
             select(UploadedImage)
             .join(
@@ -136,7 +141,7 @@ class UploadedImageRepository:
                 Customer,
                 Treatment.customer_id == Customer.id,
             )
-            .where(UploadedImage.public_url == url)
+            .where(url_match)
             .where(UploadedImage.is_deleted == False)  # noqa: E712
             .where(Customer.shop_id == shop_id)
             .where(or_(TreatmentSession.is_deleted == False, TreatmentSession.is_deleted.is_(None)))  # noqa: E712
@@ -154,7 +159,7 @@ class UploadedImageRepository:
                     TreatmentSessionImage,
                     TreatmentSessionImage.uploaded_image_id == UploadedImage.id,
                 )
-                .where(UploadedImage.public_url == url)
+                .where(url_match)
                 .where(UploadedImage.is_deleted == False)  # noqa: E712
                 .where(TreatmentSessionImage.id.is_(None))  # Only unlinked images
             )
