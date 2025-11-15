@@ -573,10 +573,10 @@ class _TreatmentNewScreenState extends ConsumerState<TreatmentNewScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    // 저장 버튼
+                    // 다음 버튼
                     Expanded(
                       child: PrimaryButton(
-                        text: '저장',
+                        text: '다음',
                         onPressed: _isLoading ? null : _handleSubmit,
                         isLoading: _isLoading,
                       ),
