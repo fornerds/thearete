@@ -22,6 +22,7 @@ class TreatmentSession(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True, nullable=False)
     treatment_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("treatment.id"), nullable=False)
     sequence: Mapped[int] = mapped_column(Integer, nullable=False, comment="회차 번호")
+    session_name: Mapped[Optional[str]] = mapped_column(String(255), comment="세션 이름")
     treatment_date: Mapped[Optional[datetime]] = mapped_column(Date, comment="시술 날짜")
     duration_minutes: Mapped[Optional[int]] = mapped_column(Integer, comment="소요시간(분)")
     melanin: Mapped[Optional[int]] = mapped_column(Integer, comment="멜라닌 투입량 (0~9)")

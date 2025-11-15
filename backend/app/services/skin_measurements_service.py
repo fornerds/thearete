@@ -36,6 +36,8 @@ class SkinMeasurementsService:
                 if not session:
                     raise ForbiddenException("Treatment session not found or does not belong to your shop")
         
+        color_recipe = await self._infer_color_recipe(request_data)
+        request_data.update(color_recipe)
         return await self.repository.create(db, request_data)
     
     async def list_skin_measurements(self, db: AsyncSession, session_id: Optional[int] = None, shop_id: Optional[int] = None, skip: int = 0, limit: int = 100) -> List[SkinColorMeasurement]:
@@ -50,4 +52,21 @@ class SkinMeasurementsService:
             if not measurement:
                 return False
         return await self.repository.delete(db, measurement_id)
+
+    async def _infer_color_recipe(self, measurement_payload: Dict[str, Any]) -> Dict[str, int]:
+        """Infer color recipe from measurement data via AI API (stub)."""
+        # AI API 호출 자리
+        # response = await ai_client.infer(measurement_payload)
+        # return response["color_recipe"]
+        l_value = measurement_payload.get("l_value") or 0
+        a_value = measurement_payload.get("a_value") or 0
+        b_value = measurement_payload.get("b_value") or 0
+        def clamp(value: float) -> int:
+            return max(0, min(9, int(round(value))))
+        return {
+            "melanin": clamp((100 - float(l_value)) / 10 if l_value else 0),
+            "white": clamp(float(l_value) / 10 if l_value else 0),
+            "red": clamp(float(a_value) / 10 if a_value else 0),
+            "yellow": clamp(float(b_value) / 10 if b_value else 0),
+        }
 

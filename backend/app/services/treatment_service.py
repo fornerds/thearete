@@ -44,9 +44,15 @@ class TreatmentService:
         
         session_service = TreatmentSessionsService()
         # First session always has sequence = 1
+        # Generate session_name: {type}({area})/{sequence}차
+        treatment_type = treatment.type or ""
+        treatment_area = treatment.area or ""
+        session_name = f"{treatment_type}({treatment_area})/1차"
+        
         session_data = {
             "treatment_id": treatment.id,
             "sequence": 1,
+            "session_name": session_name,
             "treatment_date": datetime.utcnow().date(),
             "is_completed": False,
         }

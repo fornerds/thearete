@@ -47,25 +47,6 @@ async def create_api_v1_treatment_sessions(
     """회차별 시술 기록 (로그인한 Shop의 Treatment에만 세션 등록 가능)"""
     service = TreatmentSessionsService()
     request_dict = request.dict(exclude_unset=True)
-    # Map date to treatment_date
-    if "date" in request_dict:
-        date_str = request_dict.pop("date")
-        if date_str:
-            try:
-                # Try parsing as ISO format first
-                if "T" in date_str or "Z" in date_str:
-                    request_dict["treatment_date"] = datetime.fromisoformat(date_str.replace("Z", "+00:00")).date()
-                else:
-                    # Parse as YYYY-MM-DD
-                    request_dict["treatment_date"] = datetime.strptime(date_str, "%Y-%m-%d").date()
-            except ValueError:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid date format. Use YYYY-MM-DD")
-        else:
-            request_dict["treatment_date"] = None
-    # Map duration to duration_minutes
-    if "duration" in request_dict:
-        duration_value = request_dict.pop("duration", None)
-        request_dict["duration_minutes"] = int(duration_value) if duration_value is not None else None
     
     try:
         result = await service.create_treatment_session(db, request_dict, shop_id=current_shop.id)

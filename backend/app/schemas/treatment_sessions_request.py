@@ -15,13 +15,7 @@ class Request16(BaseModel):
     """Schema for treatment sessions_request_16"""
     
     treatment_id: int = Field(..., description="시술 ID")
-    date: str = Field(..., description="시술 날짜 (YYYY-MM-DD)")
-    duration: Optional[int] = Field(None, description="소요시간(분)")
-    note: Optional[str] = Field(None, description="특이사항")
-    melanin: Optional[int] = Field(None, description="멜라닌 투입량 (0~9)")
-    white: Optional[int] = Field(None, description="화이트 투입량 (0~9)")
-    red: Optional[int] = Field(None, description="레드 투입량 (0~9)")
-    yellow: Optional[int] = Field(None, description="옐로우 투입량 (0~9)")
+    session_name: str = Field(..., description="세션 이름")
     images: List[SessionImageInput] = Field(default_factory=list, description="세션에 매핑할 이미지 URL 목록")
 
 class Request17(BaseModel):

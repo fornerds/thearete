@@ -44,7 +44,11 @@ async def create_api_v1_skin_measurements(
         )
     return skin_measurements_response_22(
         measurement_id=str(result.id),
-        created_at=result.created_at.isoformat() if result.created_at else None
+        created_at=result.created_at.isoformat() if result.created_at else None,
+        melanin=result.melanin,
+        white=result.white,
+        red=result.red,
+        yellow=result.yellow,
     )
 
 @router.get("/skin-measurements", summary="회차별 측정 데이터 목록")
@@ -63,6 +67,10 @@ async def list_api_v1_skin_measurements(
             "a": str(m.a_value) if m.a_value is not None else None,
             "b": str(m.b_value) if m.b_value is not None else None,
             "type": m.region_type,
+            "melanin": m.melanin,
+            "white": m.white,
+            "red": m.red,
+            "yellow": m.yellow,
             "measurement_id": str(m.id),
             "session_id": m.session_id,
             "created_at": m.created_at.isoformat() if m.created_at else None
