@@ -16,7 +16,7 @@ class CustomerService:
         """Create new customer."""
         # Convert request to dict if it's a Pydantic model
         if hasattr(request_data, 'dict'):
-            customer_dict = request_data.dict()
+            customer_dict = request_data.model_dump()
         else:
             customer_dict = request_data
         
@@ -67,7 +67,7 @@ class CustomerService:
         return await self.repository.get_by_id(db, customer_id)
     async def update_customer(self, db: AsyncSession, customer_id: int, request_data) -> Optional[Customer]:
         """Update customer by ID."""
-        return await self.repository.update(db, customer_id, request_data.dict() if hasattr(request_data, 'dict') else request_data)
+        return await self.repository.update(db, customer_id, request_data.model_dump() if hasattr(request_data, 'dict') else request_data)
     async def delete_customer(self, db: AsyncSession, customer_id: int) -> bool:
         """Delete customer by ID."""
         return await self.repository.delete(db, customer_id)

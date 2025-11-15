@@ -148,18 +148,42 @@ class TreatmentSessionsService:
             db,
             session_id=session_id,
         )
-        previous_image_ids = {mapping.uploaded_image_id for mapping in existing_mappings}
+        # 기존에 등록된 이미지 URL 목록 생성 (URL -> mapping 매핑)
+        existing_url_to_mapping = {
+            mapping.uploaded_image.public_url: mapping
+            for mapping in existing_mappings 
+            if mapping.uploaded_image
+        }
+        existing_urls = set(existing_url_to_mapping.keys())
 
-        if not images_payload:
-            await self.session_image_repository.replace_mappings(
+        # remove=true인 이미지 처리
+        images_to_remove = [
+            item for item in images_payload 
+            if item.get("remove") is True and item.get("url")
+        ]
+        
+        if images_to_remove:
+            await self._remove_session_images(
                 db,
                 session_id=session_id,
-                mappings=[],
+                urls_to_remove=[item["url"] for item in images_to_remove],
+                existing_url_to_mapping=existing_url_to_mapping,
             )
-            await self._cleanup_orphan_images(db, candidate_image_ids=previous_image_ids)
+
+        if not images_payload:
+            # images_payload가 비어있으면 기존 이미지 유지 (삭제하지 않음)
             return
 
-        urls = [item["url"] for item in images_payload if item.get("url")]
+        # remove가 아닌 이미지들만 처리
+        images_to_add = [
+            item for item in images_payload 
+            if item.get("remove") is not True
+        ]
+
+        if not images_to_add:
+            return
+
+        urls = [item["url"] for item in images_to_add if item.get("url")]
         uploaded_images = await self.uploaded_image_repository.get_by_urls(
             db,
             urls=urls,
@@ -169,50 +193,99 @@ class TreatmentSessionsService:
         if missing_urls:
             raise ValueError(f"다음 이미지가 존재하지 않거나 권한이 없습니다: {', '.join(missing_urls)}")
 
-        mappings = []
-        used_sequences = set()
-        next_available = 0
+        # 중복되지 않는 새로운 이미지만 필터링
+        new_mappings = []
         
-        for index, payload in enumerate(images_payload):
+        for payload in images_to_add:
             url = payload.get("url")
             if not url:
                 continue
+            
+            # 기존에 등록된 이미지 URL과 중복되는 경우 건너뛰기
+            if url in existing_urls:
+                continue
+            
             image = url_to_image[url]
-            sequence = payload.get("sequence_no")
-            
-            # If sequence_no is not provided or already used, find next available
-            if sequence is None:
-                # Find next available sequence number
-                while next_available in used_sequences:
-                    next_available += 1
-                sequence = next_available
-                next_available += 1
-            elif sequence in used_sequences:
-                # If explicitly set sequence_no is already used, find next available
-                while next_available in used_sequences:
-                    next_available += 1
-                sequence = next_available
-                next_available += 1
-            
-            used_sequences.add(sequence)
-            mappings.append(
+            new_mappings.append(
                 {
                     "treatment_id": treatment_id,
                     "session_id": session_id,
                     "uploaded_image_id": image.id,
-                    "sequence_no": sequence,
                     "photo_type": payload.get("type"),
                 }
             )
 
-        created_mappings = await self.session_image_repository.replace_mappings(
-            db,
-            session_id=session_id,
-            mappings=mappings,
+        # 새로운 매핑만 추가 (기존 매핑은 유지)
+        if new_mappings:
+            await self.session_image_repository.add_mappings(
+                db,
+                session_id=session_id,
+                mappings=new_mappings,
+            )
+
+    async def _remove_session_images(
+        self,
+        db: AsyncSession,
+        *,
+        session_id: int,
+        urls_to_remove: List[str],
+        existing_url_to_mapping: Dict[str, Any],
+    ) -> None:
+        """Remove session images by URLs."""
+        from sqlalchemy import delete
+        from app.db.models.treatment_session_image import TreatmentSessionImage
+        from app.core.storage import get_storage
+
+        mappings_to_remove = []
+        image_ids_to_remove = []
+        
+        for url in urls_to_remove:
+            if url in existing_url_to_mapping:
+                mapping = existing_url_to_mapping[url]
+                mappings_to_remove.append(mapping.id)
+                if mapping.uploaded_image:
+                    image_ids_to_remove.append(mapping.uploaded_image_id)
+
+        if not mappings_to_remove:
+            return
+
+        # 세션 이미지 매핑 삭제
+        await db.execute(
+            delete(TreatmentSessionImage).where(
+                TreatmentSessionImage.id.in_(mappings_to_remove)
+            )
         )
-        updated_image_ids = {mapping.uploaded_image_id for mapping in created_mappings}
-        removed_image_ids = previous_image_ids - updated_image_ids
-        await self._cleanup_orphan_images(db, candidate_image_ids=removed_image_ids)
+        await db.commit()
+
+        # 업로드된 이미지와 실제 파일 삭제 (hard delete)
+        if image_ids_to_remove:
+            images = await self.uploaded_image_repository.get_by_ids(
+                db,
+                image_ids_to_remove,
+            )
+            
+            storage = get_storage()
+            for image in images:
+                # 실제 파일 삭제
+                if image.storage_path:
+                    try:
+                        await storage.delete(image.storage_path)
+                    except Exception:
+                        pass  # 파일이 이미 없을 수 있음
+                if image.thumbnail_storage_path:
+                    try:
+                        await storage.delete(image.thumbnail_storage_path)
+                    except Exception:
+                        pass  # 파일이 이미 없을 수 있음
+            
+            # 업로드된 이미지 hard delete
+            from app.db.models.uploaded_image import UploadedImage
+            await db.execute(
+                delete(UploadedImage).where(
+                    UploadedImage.id.in_(image_ids_to_remove)
+                )
+            )
+            await db.commit()
 
     async def _cleanup_orphan_images(
         self,

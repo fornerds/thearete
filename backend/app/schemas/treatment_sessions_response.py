@@ -10,7 +10,6 @@ class SessionImageOutput(BaseModel):
     image_id: Optional[str] = Field(None)
     url: Optional[str] = Field(None)
     thumbnail_url: Optional[str] = Field(None)
-    sequence_no: Optional[int] = Field(None)
     type: Optional[str] = Field(None)
 
 class Response16(BaseModel):

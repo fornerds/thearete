@@ -25,14 +25,13 @@ router = APIRouter(prefix="/v1", tags=["treatment-sessions"])
 def _serialize_session_images(session) -> List[dict]:
     images = getattr(session, "images", []) or []
     serialized = []
-    for mapping in sorted(images, key=lambda item: item.sequence_no if item.sequence_no is not None else 0):
+    for mapping in images:
         uploaded = getattr(mapping, "uploaded_image", None)
         serialized.append(
             {
                 "image_id": str(uploaded.id) if uploaded else None,
                 "url": uploaded.public_url if uploaded else None,
                 "thumbnail_url": uploaded.thumbnail_url if uploaded else None,
-                "sequence_no": mapping.sequence_no,
                 "type": mapping.photo_type,
             }
         )
@@ -46,7 +45,7 @@ async def create_api_v1_treatment_sessions(
 ) -> treatment_sessions_response_16:
     """회차별 시술 기록 (로그인한 Shop의 Treatment에만 세션 등록 가능)"""
     service = TreatmentSessionsService()
-    request_dict = request.dict(exclude_unset=True)
+    request_dict = request.model_dump(exclude_unset=True)
     
     try:
         result = await service.create_treatment_session(db, request_dict, shop_id=current_shop.id)
@@ -125,7 +124,7 @@ async def update_api_v1_treatment_sessions_by_id(
 ) -> treatment_sessions_response_19:
     """회차 정보 수정 (로그인한 Shop의 세션만 수정 가능)"""
     service = TreatmentSessionsService()
-    request_dict = request.dict(exclude_unset=True)
+    request_dict = request.model_dump(exclude_unset=True)
     # Map duration to duration_minutes
     if "duration" in request_dict:
         duration_value = request_dict.pop("duration", None)

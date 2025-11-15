@@ -21,7 +21,7 @@ async def create_api_v1_skin_measurements(
 ) -> skin_measurements_response_22:
     """시술 회차별 피부색 데이터 등록 (로그인한 Shop의 TreatmentSession에만 등록 가능)"""
     service = SkinMeasurementsService()
-    request_dict = request.dict(exclude_unset=True)
+    request_dict = request.model_dump(exclude_unset=True)
     # Map type to region_type
     if "type" in request_dict:
         request_dict["region_type"] = request_dict.pop("type")

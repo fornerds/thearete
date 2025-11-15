@@ -25,14 +25,13 @@ def _serialize_treatment_sessions(treatment) -> List[dict]:
         
         images = getattr(session, "images", []) or []
         session_images = []
-        for mapping in sorted(images, key=lambda item: item.sequence_no if item.sequence_no is not None else 0):
+        for mapping in images:
             uploaded = getattr(mapping, "uploaded_image", None)
             session_images.append(
                 {
                     "image_id": str(uploaded.id) if uploaded else None,
                     "url": uploaded.public_url if uploaded else None,
                     "thumbnail_url": uploaded.thumbnail_url if uploaded else None,
-                    "sequence_no": mapping.sequence_no,
                     "type": mapping.photo_type,
                 }
             )
@@ -59,7 +58,7 @@ async def create_api_v1_treatments(
 ) -> treatment_response_11:
     """고객별 시술 등록 (로그인한 Shop의 고객만 시술 등록 가능)"""
     service = TreatmentService()
-    request_dict = request.dict(exclude_unset=True)
+    request_dict = request.model_dump(exclude_unset=True)
     result = await service.create_treatment(db, request_dict, shop_id=current_shop.id)
     if not result:
         raise HTTPException(
@@ -135,7 +134,7 @@ async def update_api_v1_treatments_by_id(
 ) -> treatment_response_14:
     """시술 정보 수정 (로그인한 Shop의 시술만 수정 가능)"""
     service = TreatmentService()
-    request_dict = request.dict(exclude_unset=True)
+    request_dict = request.model_dump(exclude_unset=True)
     result = await service.update_treatment(db, id, request_dict, shop_id=current_shop.id)
     if not result:
         raise HTTPException(

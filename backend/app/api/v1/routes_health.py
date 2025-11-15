@@ -154,7 +154,7 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> HealthResponse:
     )
     
     if overall_status == HealthStatus.UNHEALTHY:
-        raise HTTPException(status_code=status_code, detail=response.dict())
+        raise HTTPException(status_code=status_code, detail=response.model_dump())
     
     return response
 

@@ -6,7 +6,6 @@ from typing import List, Optional
 
 class SessionImagePayload(BaseModel):
     url: str = Field(..., description="업로드된 이미지 URL")
-    sequence_no: Optional[int] = Field(None, description="정렬 순서")
     type: Optional[str] = Field(None, description="사진 타입 (BEFORE/AFTER)")
 
 

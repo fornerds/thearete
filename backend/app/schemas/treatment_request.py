@@ -7,8 +7,8 @@ class SessionImageInput(BaseModel):
     """이미지 매핑 입력."""
 
     url: str = Field(..., description="업로드된 이미지 URL")
-    sequence_no: Optional[int] = Field(None, description="표시 순서 (0부터 시작)")
     type: Optional[str] = Field(None, description="사진 타입 (BEFORE/AFTER)")
+    remove: Optional[bool] = Field(None, description="이미지 삭제 여부 (true인 경우 삭제)")
 
 class Request11(BaseModel):
     """Schema for treatment_request_11"""

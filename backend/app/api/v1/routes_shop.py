@@ -25,7 +25,7 @@ async def create_api_v1_shops(request: shop_request_1, db: AsyncSession = Depend
             )
     
     service = ShopService()
-    request_dict = request.dict()
+    request_dict = request.model_dump()
     # owner 필드를 owner_name으로 변환
     if "owner" in request_dict:
         request_dict["owner_name"] = request_dict.pop("owner")
@@ -93,7 +93,7 @@ async def get_api_v1_shops_by_id(id: int = Path(..., description="id ID"), db: A
 async def update_api_v1_shops_by_id(request: shop_request_4, id: int = Path(..., description="id ID"), db: AsyncSession = Depends(get_db)) -> shop_response_4:
     """피부샵 정보 수정"""
     service = ShopService()
-    result = await service.update_shop(db, id, request.dict())
+    result = await service.update_shop(db, id, request.model_dump())
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

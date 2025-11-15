@@ -34,6 +34,24 @@ class TreatmentSessionImageRepository:
             await db.refresh(mapping)
         return created
 
+    async def add_mappings(
+        self,
+        db: AsyncSession,
+        *,
+        session_id: int,
+        mappings: Sequence[dict],
+    ) -> list[TreatmentSessionImage]:
+        """Add new mappings without deleting existing ones."""
+        created: list[TreatmentSessionImage] = []
+        for payload in mappings:
+            mapping = TreatmentSessionImage(**payload)
+            db.add(mapping)
+            created.append(mapping)
+        await db.commit()
+        for mapping in created:
+            await db.refresh(mapping)
+        return created
+
     async def get_by_session(
         self,
         db: AsyncSession,

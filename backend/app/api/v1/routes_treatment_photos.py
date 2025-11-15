@@ -38,7 +38,7 @@ async def create_api_v1_treatment_photos(
             db,
             treatment_id=request.treatment_id,
             session_id=request.session_id,
-            images=[payload.dict() for payload in request.images],
+            images=[payload.model_dump() for payload in request.images],
             shop_id=current_shop.id,
         )
     except ValueError as exc:

@@ -42,17 +42,12 @@ def _format_customer_summary(customer, include_images: bool = False) -> dict:
         images = getattr(session, "images", []) or []
         before_images = []
         after_images = []
-        sorted_images = sorted(
-            images,
-            key=lambda item: item.sequence_no if item.sequence_no is not None else 0,
-        )
-        for mapping in sorted_images:
+        for mapping in images:
             uploaded = getattr(mapping, "uploaded_image", None)
             image_payload = {
                 "image_id": str(uploaded.id) if uploaded else None,
                 "url": uploaded.public_url if uploaded else None,
                 "thumbnail_url": uploaded.thumbnail_url if uploaded else None,
-                "sequence_no": mapping.sequence_no,
                 "type": mapping.photo_type,
             }
             photo_type = (mapping.photo_type or "BEFORE").upper()
@@ -161,7 +156,7 @@ async def create_api_v1_customers(
     """고객 프로필 등록 (로그인한 Shop에 속한 고객만 등록 가능)"""
     service = CustomerService()
     # 로그인한 Shop ID를 request에 추가
-    request_dict = request.dict() if hasattr(request, 'dict') else request
+    request_dict = request.model_dump() if hasattr(request, 'dict') else request
     request_dict['shop_id'] = current_shop.id
     try:
         result = await service.create_customer(db, request_dict)

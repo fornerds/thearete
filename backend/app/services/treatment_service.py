@@ -67,7 +67,7 @@ class TreatmentService:
                 if isinstance(img, dict):
                     images_dict.append(img)
                 else:
-                    images_dict.append(img.dict() if hasattr(img, 'dict') else img)
+                    images_dict.append(img.model_dump() if hasattr(img, 'dict') else img)
             
             await session_service.set_session_images(
                 db,
@@ -90,12 +90,52 @@ class TreatmentService:
     
     async def update_treatment(self, db: AsyncSession, treatment_id: int, request_data: Dict[str, Any], shop_id: Optional[int] = None) -> Optional[Treatment]:
         """Update treatment by ID."""
+        # Extract images from request_data
+        images_payload = request_data.pop("images", None)
+        
         # Verify treatment belongs to shop
         if shop_id:
             treatment = await self.get_treatment_by_id(db, treatment_id, shop_id=shop_id)
             if not treatment:
                 return None
-        return await self.repository.update(db, treatment_id, request_data)
+        
+        result = await self.repository.update(db, treatment_id, request_data)
+        
+        # Handle images if provided - connect to first session (sequence=1)
+        if result and images_payload is not None:
+            from app.services.treatment_sessions_service import TreatmentSessionsService
+            from app.db.models.treatment_session import TreatmentSession
+            from sqlalchemy import select, or_
+            
+            # Find first session (sequence=1)
+            session_result = await db.execute(
+                select(TreatmentSession)
+                .where(TreatmentSession.treatment_id == treatment_id)
+                .where(TreatmentSession.sequence == 1)
+                .where(or_(TreatmentSession.is_deleted == False, TreatmentSession.is_deleted.is_(None)))
+            )
+            first_session = session_result.scalar_one_or_none()
+            
+            if first_session:
+                session_service = TreatmentSessionsService()
+                # Convert Pydantic models to dict if needed
+                images_dict = []
+                for img in images_payload:
+                    if isinstance(img, dict):
+                        images_dict.append(img)
+                    else:
+                        images_dict.append(img.model_dump() if hasattr(img, 'dict') else img)
+                
+                await session_service.set_session_images(
+                    db,
+                    treatment_id=treatment_id,
+                    session_id=first_session.id,
+                    images_payload=images_dict,
+                )
+                # Refresh treatment to get updated relationships
+                result = await self.repository.get_by_id(db, treatment_id, shop_id=shop_id)
+        
+        return result
     
     async def complete_treatment(self, db: AsyncSession, treatment_id: int, shop_id: Optional[int] = None) -> bool:
         """Mark treatment as completed if all sessions are completed."""

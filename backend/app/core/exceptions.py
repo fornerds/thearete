@@ -172,7 +172,7 @@ def create_error_response(
         content = error_response.model_dump(mode='json')
     except AttributeError:
         # Fallback for older Pydantic versions
-        content = error_response.dict()
+        content = error_response.model_dump()
         # Convert datetime objects to ISO format strings
         import json
         content = json.loads(json.dumps(content, default=str))
