@@ -88,7 +88,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       'age': 33,
       'treatmentName': '보톡스',
       'additionalTreatments': 1,
-      'isPinned': true,
+      'isPinned': false,
     },
     {
       'id': 7,

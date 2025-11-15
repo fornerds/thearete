@@ -13,6 +13,7 @@ import '../../presentation/screens/customers/customer_detail_screen.dart';
 import '../../presentation/screens/customers/customer_treatment_new_screen.dart';
 import '../../presentation/screens/treatments/treatment_detail_screen.dart';
 import '../../presentation/screens/treatments/treatment_session_new_screen.dart';
+import '../../presentation/screens/treatments/treatment_new_screen.dart';
 import '../../presentation/screens/sessions/sessions_screen.dart';
 import '../../presentation/screens/sessions/sessions_pending_screen.dart';
 import '../../presentation/screens/sessions/session_detail_screen.dart';
@@ -105,6 +106,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       
       // 시술 관리
+      GoRoute(
+        path: '/treatments/new',
+        builder: (context, state) => const TreatmentNewScreen(),
+      ),
       GoRoute(
         path: '/treatments/:treatmentId',
         builder: (context, state) {
